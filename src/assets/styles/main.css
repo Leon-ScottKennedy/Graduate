@@ -10,7 +10,6 @@ html {
   scroll-behavior: smooth;
 }
 
-/* 全站统一背景色，所有板块不再单独设置背景色 */
 body {
   background: linear-gradient(135deg, #0d0d0d 0%, #141516 45%, #111213 75%, #0c0c0c 100%);
   position: relative;
@@ -18,7 +17,6 @@ body {
   font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
-/* CodePen 风格漂浮方块背景：叠加在板块底色之上 */
 .section_bg {
   position: absolute;
   inset: 0;
