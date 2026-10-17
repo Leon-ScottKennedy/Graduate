@@ -39,3 +39,12 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 /.tmp/
+
+# Local credentials and backend-generated data
+.env
+.env.*
+!.env.example
+**/.venv/
+**/__pycache__/
+*.pyc
+/server/storage/

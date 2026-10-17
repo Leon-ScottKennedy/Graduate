@@ -1,87 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-interface PlanDetail {
-  part: string
-  name: string
-  price: number
-}
+import { getConfigPlans } from '../services/catalogService'
+import { money as formatPrice } from '../utils/format'
 
-interface ConfigPlan {
-  name: string
-  price: string
-  desc: string
-  specs: string[]
-  featured?: boolean
-  detail: PlanDetail[]
-}
-
-const plans: ConfigPlan[] = [
-  {
-    name: '办公影音',
-    price: '¥3,499',
-    desc: '文档办公 · 网页浏览 · 高清影音',
-    specs: ['CPU · i5-12400', '显卡 · 核芯显卡', '内存 · 16GB DDR4', '固态 · 512GB NVMe'],
-    detail: [
-      { part: 'CPU', name: 'Intel i5-12400', price: 1099 },
-      { part: '显卡', name: 'UHD 730 核显', price: 0 },
-      { part: '内存', name: 'DDR4 3200 16GB', price: 299 },
-      { part: '固态', name: '512GB NVMe', price: 299 },
-      { part: '主板', name: 'B660M DDR4', price: 599 },
-      { part: '电源', name: '450W 铜牌', price: 249 },
-      { part: '机箱', name: '简约办公机箱', price: 199 }
-    ]
-  },
-  {
-    name: '主流游戏',
-    price: '¥6,999',
-    desc: '1080P 高画质畅玩 3A 大作',
-    specs: ['CPU · i5-14600KF', '显卡 · RTX 4060', '内存 · 32GB DDR5', '固态 · 1TB NVMe'],
-    featured: true,
-    detail: [
-      { part: 'CPU', name: 'Intel i5-14600KF', price: 1899 },
-      { part: '显卡', name: 'RTX 4060 8GB', price: 2499 },
-      { part: '内存', name: 'DDR5 6000 32GB', price: 899 },
-      { part: '固态', name: '1TB NVMe PCIe 4.0', price: 549 },
-      { part: '主板', name: 'B760M DDR5', price: 999 },
-      { part: '散热', name: '240 一体式水冷', price: 399 },
-      { part: '电源', name: '650W 金牌', price: 499 },
-      { part: '机箱', name: '中塔侧透机箱', price: 399 }
-    ]
-  },
-  {
-    name: '高端创作',
-    price: '¥12,999',
-    desc: '4K 视频剪辑 · 3D 渲染 · 直播推流',
-    specs: ['CPU · i7-14700KF', '显卡 · RTX 4070 SUPER', '内存 · 64GB DDR5', '固态 · 2TB NVMe'],
-    detail: [
-      { part: 'CPU', name: 'Intel i7-14700KF', price: 2899 },
-      { part: '显卡', name: 'RTX 4070 SUPER 12GB', price: 4899 },
-      { part: '内存', name: 'DDR5 6400 64GB', price: 1799 },
-      { part: '固态', name: '2TB NVMe PCIe 4.0', price: 999 },
-      { part: '主板', name: 'Z790M DDR5', price: 1499 },
-      { part: '散热', name: '360 一体式水冷', price: 599 },
-      { part: '电源', name: '850W 金牌全模组', price: 799 },
-      { part: '机箱', name: '静音中塔机箱', price: 599 }
-    ]
-  },
-  {
-    name: 'AI 工作站',
-    price: '¥19,999',
-    desc: '大模型本地部署 · 深度学习训练',
-    specs: ['CPU · R9 9950X', '显卡 · RTX 4080 SUPER', '内存 · 96GB DDR5', '固态 · 4TB NVMe'],
-    detail: [
-      { part: 'CPU', name: 'AMD R9 9950X', price: 4299 },
-      { part: '显卡', name: 'RTX 4080 SUPER 16GB', price: 8099 },
-      { part: '内存', name: 'DDR5 6000 96GB', price: 2699 },
-      { part: '固态', name: '4TB NVMe PCIe 4.0', price: 1999 },
-      { part: '主板', name: 'X870E 旗舰主板', price: 2999 },
-      { part: '散热', name: '420 一体式水冷', price: 999 },
-      { part: '电源', name: '1000W 白金全模组', price: 1299 },
-      { part: '机箱', name: '全塔工作站机箱', price: 899 }
-    ]
-  }
-]
+const plans = getConfigPlans()
 
 const expandedPlan = ref<string | null>(null)
 
@@ -89,13 +12,9 @@ function togglePlan(name: string) {
   expandedPlan.value = expandedPlan.value === name ? null : name
 }
 
-function formatPrice(value: number) {
-  return '¥' + value.toLocaleString()
-}
-
 const cubes = [
   { top: '16%', left: '12%', width: '40px', height: '40px', animationDelay: '1s' },
-  { bottom: '18%', right: '14%', width: '50px', height: '50px', animationDelay: '0s' }
+  { bottom: '18%', right: '14%', width: '50px', height: '50px', animationDelay: '0s' },
 ]
 </script>
 
@@ -125,11 +44,7 @@ const cubes = [
           <ul class="config_plan_specs">
             <li v-for="spec in plan.specs" :key="spec">{{ spec }}</li>
           </ul>
-          <a
-            href="javascript:void(0)"
-            class="config_plan_link"
-            @click="togglePlan(plan.name)"
-          >
+          <a href="javascript:void(0)" class="config_plan_link" @click="togglePlan(plan.name)">
             {{ expandedPlan === plan.name ? '收起配置 ↑' : '查看完整配置 →' }}
           </a>
         </div>

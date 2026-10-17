@@ -1,205 +1,270 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
+import BuildPartInspector from '../components/build/BuildPartInspector.vue'
+import BuildAssistant from '../components/build/BuildAssistant.vue'
+import { getBuildCatalog } from '../services/catalogService'
+import type { PartOption } from '../types/hardware'
+import { money } from '../utils/format'
+import '../assets/styles/build-workspace.css'
 
-interface BuildItem {
-  part: string
-  name: string
-  price: number
-}
-
-const budget = ref(10000)
-const budgetMin = 3000
-const budgetMax = 30000
-
-const sliderPercent = computed(
-  () => ((budget.value - budgetMin) / (budgetMax - budgetMin)) * 100
+const demoParts = getBuildCatalog()
+const budget = ref(9000)
+const usage = ref('游戏电竞')
+const preference = ref('均衡搭配')
+const extra = ref('')
+const generatedFor = ref('游戏电竞 · 均衡搭配')
+const usageOptions = ['游戏电竞', '内容创作', '办公学习', 'AI 计算']
+const preferences = ['均衡搭配', '控制预算', '静音优先']
+const chosen = ref<Record<string, PartOption>>(
+  Object.fromEntries(demoParts.map((part) => [part.id, part.options[0]])),
 )
-
-const usages = ['游戏电竞', '内容创作', '办公学习', 'AI 计算']
-const preferences = ['均衡搭配', '性能优先', '静音低温']
-
-const activeUsage = ref('游戏电竞')
-const activePreference = ref('均衡搭配')
-
-// 各用途完整配置库（含机箱、风扇等更多部件）
-const buildLibrary: Record<string, BuildItem[]> = {
-  游戏电竞: [
-    { part: 'CPU', name: 'Intel i5-14600KF', price: 1899 },
-    { part: '显卡', name: 'RTX 4070 SUPER', price: 4899 },
-    { part: '内存', name: 'DDR5 6000 32GB (16GB×2)', price: 899 },
-    { part: '固态', name: '1TB NVMe PCIe 4.0', price: 549 },
-    { part: '主板', name: 'B760M 重炮手 DDR5', price: 999 },
-    { part: '散热', name: '360 一体式水冷', price: 499 },
-    { part: '电源', name: '750W 金牌全模组', price: 599 },
-    { part: '机箱', name: '中塔侧透机箱', price: 399 },
-    { part: '风扇', name: 'ARGB 机箱风扇 ×3', price: 199 }
-  ],
-  内容创作: [
-    { part: 'CPU', name: 'Intel i7-14700KF', price: 2899 },
-    { part: '显卡', name: 'RTX 4070 SUPER', price: 4899 },
-    { part: '内存', name: 'DDR5 6400 64GB (32GB×2)', price: 1799 },
-    { part: '固态', name: '2TB NVMe PCIe 4.0', price: 999 },
-    { part: '主板', name: 'Z790M DDR5', price: 1499 },
-    { part: '散热', name: '360 一体式水冷', price: 599 },
-    { part: '电源', name: '850W 金牌全模组', price: 799 },
-    { part: '机箱', name: '静音中塔机箱', price: 599 },
-    { part: '风扇', name: '静音风扇 ×3', price: 249 }
-  ],
-  办公学习: [
-    { part: 'CPU', name: 'Intel i5-12400', price: 1099 },
-    { part: '显卡', name: '核芯显卡', price: 0 },
-    { part: '内存', name: 'DDR4 3200 16GB (8GB×2)', price: 299 },
-    { part: '固态', name: '512GB NVMe', price: 299 },
-    { part: '主板', name: 'B660M DDR4', price: 599 },
-    { part: '散热', name: '原装散热器', price: 0 },
-    { part: '电源', name: '450W 铜牌', price: 249 },
-    { part: '机箱', name: '简约办公机箱', price: 199 },
-    { part: '风扇', name: '标配风扇', price: 0 }
-  ],
-  'AI 计算': [
-    { part: 'CPU', name: 'AMD R9 9950X', price: 4299 },
-    { part: '显卡', name: 'RTX 4080 SUPER', price: 8099 },
-    { part: '内存', name: 'DDR5 6000 96GB (48GB×2)', price: 2699 },
-    { part: '固态', name: '4TB NVMe PCIe 4.0', price: 1999 },
-    { part: '主板', name: 'X870E 旗舰主板', price: 2999 },
-    { part: '散热', name: '420 一体式水冷', price: 999 },
-    { part: '电源', name: '1000W 白金全模组', price: 1299 },
-    { part: '机箱', name: '全塔工作站机箱', price: 899 },
-    { part: '风扇', name: '高风压风扇 ×4', price: 399 }
-  ]
-}
-
-const currentBuild = computed(() => buildLibrary[activeUsage.value])
-
-const totalPrice = computed(() =>
-  currentBuild.value.reduce((sum, item) => sum + item.price, 0)
+const selectedId = ref('gpu')
+const selectedGroup = computed(
+  () => demoParts.find((part) => part.id === selectedId.value) ?? demoParts[0]!,
 )
-
-function formatPrice(value: number) {
-  return '¥' + value.toLocaleString()
+const selectedOption = computed(
+  () => chosen.value[selectedGroup.value.id] ?? selectedGroup.value.options[0],
+)
+const rows = computed(() =>
+  demoParts.map((group) => ({ ...group, selected: chosen.value[group.id] ?? group.options[0] })),
+)
+const total = computed(() => rows.value.reduce((sum, row) => sum + row.selected.price, 0))
+const hoveredAllocation = ref<string | null>(null)
+const focusedAllocation = ref<string | null>(null)
+const activeAllocation = computed(() =>
+  rows.value.find((row) => row.id === (hoveredAllocation.value ?? focusedAllocation.value)),
+)
+function allocationPercent(price: number) {
+  return `${((price / total.value) * 100).toFixed(1)}%`
 }
+const remaining = computed(() => budget.value - total.value)
+const notice = ref('')
+const activeQuestion = ref('')
+const pendingChanges = ref(false)
+const requests = ['预算怎么分配？', '报价从哪里来？', '这套配置兼容吗？']
 
-const cubes = [
-  { top: '20%', right: '12%', width: '46px', height: '46px', animationDelay: '0.5s' },
-  { bottom: '22%', left: '10%', width: '32px', height: '32px', animationDelay: '2.5s' }
-]
+function selectUsage(value: string) {
+  usage.value = value
+  pendingChanges.value = true
+}
+function selectPreference(value: string) {
+  preference.value = value
+  pendingChanges.value = true
+}
+function generate() {
+  budget.value = Math.min(30000, Math.max(3000, Number(budget.value) || 9000))
+  const upgraded = budget.value >= 11000 && preference.value !== '控制预算'
+  chosen.value = Object.fromEntries(
+    demoParts.map((group) => {
+      const useUpgrade =
+        (upgraded && ['cpu', 'gpu', 'power'].includes(group.id)) ||
+        (usage.value === '内容创作' && budget.value >= 9000 && ['ram', 'ssd'].includes(group.id)) ||
+        (preference.value === '静音优先' && ['case', 'cooler'].includes(group.id))
+      return [group.id, group.options[useUpgrade ? 1 : 0]]
+    }),
+  )
+  generatedFor.value = `${usage.value} · ${preference.value}`
+  pendingChanges.value = false
+  notice.value = '配置已更新'
+}
+function replace(option: PartOption) {
+  chosen.value = { ...chosen.value, [selectedGroup.value.id]: option }
+  notice.value = `已替换${selectedGroup.value.label}`
+}
+const assistantReply = computed(() => {
+  const question = activeQuestion.value
+  if (!question) return ''
+  if (question === requests[0]) {
+    const gpu = chosen.value.gpu!
+    return `当前示例总价 ${money(total.value)}，其中显卡 ${money(gpu.price)}，占比约 ${Math.round((gpu.price / total.value) * 100)}%。${remaining.value >= 0 ? `预算余量 ${money(remaining.value)}。` : `超过预算 ${money(-remaining.value)}，可在候选对比中更换配件。`}`
+  } else if (question === requests[1]) {
+    return '当前为示例报价，尚未接入京东、淘宝实时数据。'
+  } else if (question === requests[2]) {
+    return 'AM5 / DDR5 接口一致；BIOS、尺寸与供电兼容性尚未校验。'
+  }
+  return 'AI 尚未接入，暂不支持自由问答。可点击快捷问题查看当前配置。'
+})
+function ask(question: string) {
+  activeQuestion.value = question
+}
 </script>
 
 <template>
-  <section class="smart_build">
-    <div class="section_bg">
-      <span v-for="(cube, i) in cubes" :key="i" class="cube" :style="cube"></span>
-    </div>
-    <div class="smart_build_inner">
-      <header class="smart_build_head">
-        <span class="smart_build_kicker">SMART BUILD</span>
-        <h2 class="smart_build_title">智能装机</h2>
-        <p class="smart_build_subtitle">设定预算与用途，AI 秒出配置清单</p>
-      </header>
-
-      <div class="smart_build_panel">
-        <div class="smart_build_controls">
-          <div class="smart_build_field">
-            <label class="smart_build_label">预算范围</label>
-            <div class="smart_build_budget">
-              <span class="smart_build_budget_value">{{ formatPrice(budget) }}</span>
-              <span class="smart_build_budget_range">¥3,000 - ¥30,000</span>
-            </div>
-            <div class="smart_build_slider">
-              <input
-                v-model.number="budget"
-                type="range"
-                class="smart_build_range"
-                :min="budgetMin"
-                :max="budgetMax"
-                step="100"
-              />
-            </div>
-          </div>
-
-          <div class="smart_build_field">
-            <label class="smart_build_label">主要用途</label>
-            <div class="smart_build_tags">
-              <span
-                v-for="usage in usages"
-                :key="usage"
-                class="smart_build_tag"
-                :class="{ active: activeUsage === usage }"
-                @click="activeUsage = usage"
-              >
-                {{ usage }}
-              </span>
-            </div>
-          </div>
-
-          <div class="smart_build_field">
-            <label class="smart_build_label">性能偏好</label>
-            <div class="smart_build_tags">
-              <span
-                v-for="pref in preferences"
-                :key="pref"
-                class="smart_build_tag"
-                :class="{ active: activePreference === pref }"
-                @click="activePreference = pref"
-              >
-                {{ pref }}
-              </span>
-            </div>
-          </div>
-
-          <button class="smart_build_btn">生成配置方案</button>
-        </div>
-
-        <div class="smart_build_result">
-          <h3 class="smart_build_result_title">推荐配置 · {{ activeUsage }}</h3>
-          <ul class="smart_build_list">
-            <li v-for="item in currentBuild" :key="item.part" class="smart_build_item">
-              <span class="smart_build_part">{{ item.part }}</span>
-              <span class="smart_build_name">{{ item.name }}</span>
-              <span class="smart_build_price">{{ formatPrice(item.price) }}</span>
-            </li>
-          </ul>
-          <div class="smart_build_total">
-            <span>预估整机</span>
-            <strong>{{ formatPrice(totalPrice) }}</strong>
+  <div class="nb-workspace">
+    <header class="nb-page-head">
+      <div>
+        <h1>智能装机</h1>
+      </div>
+    </header>
+    <BuildAssistant
+      :question="activeQuestion"
+      :reply="assistantReply"
+      :questions="requests"
+      @ask="ask"
+    />
+    <div class="nb-workbench">
+      <aside class="nb-requirements nb-card">
+        <div class="nb-card-head">
+          <div>
+            <h2>装机需求</h2>
           </div>
         </div>
+        <form @submit.prevent="generate">
+          <label class="nb-label" for="build-budget">整机预算 <span>不含显示器与外设</span></label>
+          <div class="nb-budget-input">
+            <span>¥</span
+            ><input
+              id="build-budget"
+              v-model.number="budget"
+              type="number"
+              min="3000"
+              max="30000"
+              step="100"
+              required
+              @input="pendingChanges = true"
+            /><small>元</small>
+          </div>
+          <input
+            v-model.number="budget"
+            aria-label="调整整机预算"
+            class="nb-range"
+            type="range"
+            min="3000"
+            max="30000"
+            step="100"
+            @input="pendingChanges = true"
+          />
+          <div class="nb-range-labels"><span>¥3,000</span><span>¥30,000</span></div>
+          <fieldset>
+            <legend class="nb-label">主要用途</legend>
+            <div class="nb-choice-grid">
+              <button
+                v-for="item in usageOptions"
+                :key="item"
+                type="button"
+                :aria-pressed="usage === item"
+                :class="{ active: usage === item }"
+                @click="selectUsage(item)"
+              >
+                {{ item }}
+              </button>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend class="nb-label">搭配偏好</legend>
+            <div class="nb-choice-stack">
+              <button
+                v-for="item in preferences"
+                :key="item"
+                type="button"
+                :aria-pressed="preference === item"
+                :class="{ active: preference === item }"
+                @click="selectPreference(item)"
+              >
+                <span>{{ item }}</span
+                ><span>{{ preference === item ? '●' : '○' }}</span>
+              </button>
+            </div>
+          </fieldset>
+          <label class="nb-label" for="build-extra">补充需求 <span>仅记录</span></label
+          ><textarea
+            id="build-extra"
+            v-model="extra"
+            placeholder="例如：已有硬盘、希望白色机箱……"
+            rows="3"
+            maxlength="300"
+            @input="pendingChanges = true"
+          ></textarea>
+          <button class="nb-button nb-generate" type="submit">
+            {{ pendingChanges ? '更新配置' : '生成配置' }} <span>↗</span>
+          </button>
+        </form>
+      </aside>
+      <div class="nb-main-column">
+        <section class="nb-result nb-card" aria-labelledby="build-list-title">
+          <div class="nb-card-head">
+            <div>
+              <h2 id="build-list-title">配置清单</h2>
+              <p>
+                {{ generatedFor }}
+                <span v-if="pendingChanges" class="nb-warm">· 待更新</span>
+              </p>
+            </div>
+            <span class="nb-badge">{{ rows.length }} 项配置</span>
+          </div>
+          <div class="nb-total-row">
+            <div>
+              <span>整机总价</span><strong>{{ money(total) }}</strong>
+            </div>
+            <div class="nb-budget-state" :class="{ over: remaining < 0 }">
+              <span>{{ remaining >= 0 ? '预算余量' : '超出预算' }}</span
+              ><b>{{ money(Math.abs(remaining)) }}</b>
+            </div>
+          </div>
+          <div class="nb-allocation-detail" aria-live="polite">
+            <span>预算分配</span>
+            <span v-if="activeAllocation" class="nb-allocation-value">
+              <i :style="{ background: activeAllocation.color }"></i>
+              {{ activeAllocation.label }} · {{ money(activeAllocation.selected.price) }} ·
+              {{ allocationPercent(activeAllocation.selected.price) }}
+            </span>
+          </div>
+          <div class="nb-allocation" role="group" aria-label="配件预算占比">
+            <button
+              v-for="row in rows"
+              :key="row.id"
+              type="button"
+              :class="{
+                active: activeAllocation?.id === row.id,
+                dimmed: activeAllocation && activeAllocation.id !== row.id,
+              }"
+              :style="{ flexGrow: row.selected.price, background: row.color }"
+              :aria-label="`${row.label} · ${money(row.selected.price)} · ${allocationPercent(row.selected.price)}`"
+              @mouseenter="hoveredAllocation = row.id"
+              @mouseleave="hoveredAllocation = null"
+              @focus="focusedAllocation = row.id"
+              @blur="focusedAllocation = null"
+              @click="selectedId = row.id"
+            ></button>
+          </div>
+          <div class="nb-list-heading"><span>配件 / 型号</span><span>单价 / 详情</span></div>
+          <button
+            v-for="row in rows"
+            :key="row.id"
+            class="nb-part-row"
+            :class="{ active: selectedId === row.id }"
+            type="button"
+            :aria-pressed="selectedId === row.id"
+            @mouseenter="hoveredAllocation = row.id"
+            @mouseleave="hoveredAllocation = null"
+            @focus="focusedAllocation = row.id"
+            @blur="focusedAllocation = null"
+            @click="selectedId = row.id"
+          >
+            <span class="nb-part-icon" :style="{ borderColor: row.color, color: row.color }">{{
+              row.symbol
+            }}</span
+            ><span class="nb-part-name"
+              ><small>{{ row.label }} · {{ row.selected.brand }}</small
+              ><strong :title="row.selected.name">{{ row.selected.name }}</strong></span
+            ><span class="nb-part-price"
+              >{{ money(row.selected.price)
+              }}<small
+                >{{ allocationPercent(row.selected.price) }} ·
+                {{ selectedId === row.id ? '已选' : '查看' }} →</small
+              ></span
+            >
+          </button>
+          <div class="nb-check-note">
+            <span>◇</span>
+            <div>
+              <strong>兼容性未校验</strong>
+            </div>
+          </div>
+        </section>
+        <p v-if="notice" class="nb-live-message" role="status" aria-live="polite">{{ notice }}</p>
+        <BuildPartInspector :group="selectedGroup" :selected="selectedOption" @replace="replace" />
       </div>
     </div>
-  </section>
+  </div>
 </template>
-
-<style scoped>
-/* 原生 range 滑块：延续滑块视觉风格 */
-.smart_build_range {
-  width: 100%;
-  height: 6px;
-  appearance: none;
-  border-radius: 3px;
-  outline: none;
-  background: linear-gradient(
-    90deg,
-    var(--color-primary) 0%,
-    var(--color-primary-light) v-bind('sliderPercent + "%"'),
-    var(--border-base) v-bind('sliderPercent + "%"')
-  );
-  cursor: pointer;
-}
-
-.smart_build_range::-webkit-slider-thumb {
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: var(--text-primary);
-  border: 3px solid var(--color-primary);
-}
-
-.smart_build_range::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: var(--text-primary);
-  border: 3px solid var(--color-primary);
-}
-</style>
