@@ -1,0 +1,51 @@
+/* ========== 全站 CSS 变量统一管理 ========== */
+
+/* 主色调：紫色系 */
+:root {
+  --color-primary: #6c5ce7;
+  --color-primary-mid: #8b7cff;
+  --color-primary-light: #a29bfe;
+
+  /* 背景色 */
+  --bg-nav: #151515;
+  --bg-card: #181818;
+  --bg-elevated: #1e1e1e;
+
+  /* 边框/分隔线 */
+  --border-base: #2c2c2c;
+  --border-divider: #26262e;
+  --border-divider-alt: #26262c;
+
+  /* 文字颜色（从高亮到弱化） */
+  --text-primary: #ffffff;
+  --text-secondary: #e4e4ec;
+  --text-body: #d0d0dc;
+  --text-list: #c5c5d2;
+  --text-muted: #a0a0b0;
+  --text-muted-2: #a0a0a0;
+  --text-subtitle: #9a9aa8;
+  --text-desc: #8a8a8a;
+  --text-label: #8a8a98;
+  --text-hint: #6c6c7e;
+  --text-placeholder: #6a6a78;
+
+  /* 渐变 */
+  --gradient-primary: linear-gradient(90deg, #6c5ce7, #8b7cff);
+  --gradient-primary-135: linear-gradient(135deg, #6c5ce7, #8b7cff);
+  --gradient-primary-to-light: linear-gradient(90deg, #6c5ce7, #a29bfe);
+  --gradient-hero-title: linear-gradient(120deg, #ffffff 10%, #a29bfe 60%, #6c5ce7 100%);
+  --gradient-body: linear-gradient(135deg, #0d0d0d 0%, #141516 45%, #111213 75%, #0c0c0c 100%);
+  --gradient-cube: linear-gradient(135deg, rgba(108, 92, 231, 0.12), rgba(162, 155, 254, 0.05));
+
+  /* 字体 */
+  --font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  /* 阴影 */
+  --shadow-cube: 0 4px 24px rgba(108, 92, 231, 0.06);
+
+  /* 通用间距/尺寸 */
+  --section-padding-y: 64px;
+  --section-padding-x: 24px;
+  --content-max-width: 1120px;
+  --nav-top-height: 60px;
+}

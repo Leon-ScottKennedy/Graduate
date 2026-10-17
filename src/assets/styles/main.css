@@ -1,3 +1,7 @@
+@import './variables.css';
+@import './layout.css';
+@import './animations.css';
+
 *,
 ::after,
 ::before {
@@ -8,33 +12,4 @@
 
 html {
   scroll-behavior: smooth;
-}
-
-body {
-  background: linear-gradient(135deg, #0d0d0d 0%, #141516 45%, #111213 75%, #0c0c0c 100%);
-  position: relative;
-  overflow-x: hidden;
-  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-
-.section_bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.cube {
-  position: absolute;
-  border-radius: 6px;
-  background: linear-gradient(135deg, rgba(108, 92, 231, 0.12), rgba(162, 155, 254, 0.05));
-  border: 1px solid rgba(162, 155, 254, 0.12);
-  box-shadow: 0 4px 24px rgba(108, 92, 231, 0.06);
-  animation: cube_float 9s ease-in-out infinite;
-}
-
-@keyframes cube_float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-14px) rotate(6deg); }
 }

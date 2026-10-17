@@ -47,10 +47,10 @@
         <nav class="nav_footer_links">
           <div class="nav_footer_col">
             <h4 class="nav_footer_col_title">产品</h4>
-            <a href="#smart-build" class="nav_footer_link">智能装机</a>
-            <a href="#ai-chat" class="nav_footer_link">AI 提问</a>
-            <a href="#config-plan" class="nav_footer_link">配置方案</a>
-            <a href="#hardware-compare" class="nav_footer_link">硬件对比</a>
+            <router-link to="/smart-build" class="nav_footer_link">智能装机</router-link>
+            <router-link to="/ai-chat" class="nav_footer_link">AI 提问</router-link>
+            <router-link to="/config-plan" class="nav_footer_link">配置方案</router-link>
+            <router-link to="/hardware-compare" class="nav_footer_link">硬件对比</router-link>
           </div>
           <div class="nav_footer_col">
             <h4 class="nav_footer_col_title">关于</h4>
@@ -76,9 +76,10 @@
 
 <style scoped>
 .nav_footer {
+  flex-shrink: 0;
   padding: 56px 24px 32px;
-  border-top: 1px solid #26262e;
-  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  border-top: 1px solid var(--border-divider);
+  font-family: var(--font-family);
 }
 
 .nav_footer_inner {
@@ -110,13 +111,13 @@
 .nav_footer_brand_name {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .nav_footer_brand_sub {
   font-size: 12px;
   letter-spacing: 2px;
-  color: #8a8a98;
+  color: var(--text-label);
 }
 
 /* 链接列 */
@@ -134,26 +135,26 @@
   margin-bottom: 14px;
   font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .nav_footer_link {
   padding: 5px 0;
   font-size: 13px;
-  color: #8a8a98;
+  color: var(--text-label);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .nav_footer_link:hover {
-  color: #a29bfe;
+  color: var(--color-primary-light);
 }
 
 /* 底部分隔 + 版权 */
 .nav_footer_bottom {
   margin-top: 48px;
   padding-top: 24px;
-  border-top: 1px solid #26262e;
+  border-top: 1px solid var(--border-divider);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -162,6 +163,6 @@
 .nav_footer_copy,
 .nav_footer_tip {
   font-size: 12px;
-  color: #6c6c7e;
+  color: var(--text-hint);
 }
 </style>

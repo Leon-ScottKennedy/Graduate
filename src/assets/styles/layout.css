@@ -1,0 +1,36 @@
+/* ========== 通用布局与间距 ========== */
+
+body {
+  background: var(--gradient-body);
+  position: relative;
+  overflow-x: hidden;
+  font-family: var(--font-family);
+}
+
+/* 板块背景容器：承载浮动立方体装饰 */
+.section_bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 浮动立方体装饰元素 */
+.cube {
+  position: absolute;
+  border-radius: 6px;
+  background: var(--gradient-cube);
+  border: 1px solid rgba(162, 155, 254, 0.12);
+  box-shadow: var(--shadow-cube);
+  animation: cube_float 9s ease-in-out infinite;
+}
+
+/* 通用内容容器：水平居中 + 最大宽度 */
+.layout-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}

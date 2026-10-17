@@ -1,0 +1,113 @@
+/* ========== 硬件对比 ========== */
+.hardware_compare {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 64px 24px;
+  font-family: var(--font-family);
+}
+
+.hardware_compare_inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.hardware_compare_head {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.hardware_compare_kicker {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--color-primary-light);
+}
+
+.hardware_compare_title {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.hardware_compare_subtitle {
+  margin-top: 14px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-subtitle);
+}
+
+/* 对比表：纯文字列表风格，与其他板块统一 */
+.hardware_compare_table {
+  display: flex;
+  flex-direction: column;
+}
+
+.hardware_compare_row {
+  display: grid;
+  grid-template-columns: 160px 1fr 1fr;
+  align-items: center;
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--border-divider);
+  transition: color 0.2s ease;
+}
+
+.hardware_compare_row:last-of-type {
+  border-bottom: none;
+}
+
+.hardware_compare_cell {
+  font-size: 14px;
+  color: var(--text-body);
+  text-align: center;
+}
+
+.hardware_compare_cell:nth-child(2) {
+  padding-right: 20px;
+}
+
+.hardware_compare_cell:nth-child(3) {
+  padding-left: 20px;
+}
+
+/* 占优数值：紫色粗体 */
+.hardware_compare_win {
+  color: var(--color-primary-light);
+  font-weight: 700;
+}
+
+/* 表头行 */
+.hardware_compare_row_head .hardware_compare_cell {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 第一列：对比项标签 */
+.hardware_compare_label {
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-label);
+}
+
+.hardware_compare_more {
+  display: block;
+  margin-top: 16px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-light);
+  text-align: center;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.hardware_compare_more:hover {
+  color: var(--text-primary);
+}

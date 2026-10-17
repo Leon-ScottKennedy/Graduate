@@ -1,0 +1,11 @@
+/* ========== 全站公共动画 ========== */
+
+@keyframes cube_float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(6deg);
+  }
+}
