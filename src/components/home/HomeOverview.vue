@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import HomeFeatureSection from './HomeFeatureSection.vue'
 const scenes = [
   { title: '尽兴游戏', text: '帧率与画质', symbol: '↗' },
@@ -9,7 +9,7 @@ const steps = ['说清预算与用途', '逐项了解配置', '比较后再选�
 </script>
 
 <template>
-  <div class="home_overview">
+  <div id="home-features" class="home_overview">
     <HomeFeatureSection id="scenes-title" eyebrow="01 / 按需选择" title="你的日常，决定你的配置。" description="先想用来做什么，再决定买什么。" to="/config-plan" link="浏览配置方案">
       <div class="home_scene_list">
         <router-link v-for="scene in scenes" :key="scene.title" to="/config-plan" class="home_scene_row">
@@ -37,7 +37,7 @@ const steps = ['说清预算与用途', '逐项了解配置', '比较后再选�
         <div class="overview_chat_topics"><span>显卡怎么选</span><span>内存多大够用</span></div>
       </div>
     </HomeFeatureSection>
-    <HomeFeatureSection id="steps-title" eyebrow="04 / 开始搭配" title="从一个想法，到一份清单。" description="一步一步，让你的选择更有方向。" to="/smart-build" link="开始搭配" reverse>
+    <HomeFeatureSection id="steps-title" eyebrow="04 / 开始搭配" title="从一个想法，到一份清单。" description="一步一步，让你的选择更有方向。" reverse>
       <ol class="home_step_list"><li v-for="(step, index) in steps" :key="step"><span>0{{ index + 1 }}</span><h3>{{ step }}</h3></li></ol>
     </HomeFeatureSection>
     <section class="overview_cta" aria-labelledby="start-title">

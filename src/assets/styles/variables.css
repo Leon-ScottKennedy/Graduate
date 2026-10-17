@@ -5,6 +5,9 @@
   --color-primary: #6c5ce7;
   --color-primary-mid: #8b7cff;
   --color-primary-light: #a29bfe;
+  --gradient-spectrum: linear-gradient(90deg, #43cf93 0%, #17c5de 25%, #6e8af7 47%, #ac75e9 66%, #ebafad 83%, #f6d64d 100%);
+  --gradient-paper: linear-gradient(135deg, #d6f4e6 0%, #dcecf9 40%, #ece1f7 72%, #faf0d5 100%);
+  --pixel-cut: polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px));
 
   /* 背景色 */
   --bg-nav: #151515;

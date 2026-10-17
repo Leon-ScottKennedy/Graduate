@@ -4,8 +4,8 @@ defineProps<{
   eyebrow: string
   title: string
   description: string
-  to: string
-  link: string
+  to?: string
+  link?: string
   reverse?: boolean
 }>()
 </script>
@@ -16,7 +16,7 @@ defineProps<{
       <p class="hero_eyebrow">{{ eyebrow }}</p>
       <h2 :id="id">{{ title }}</h2>
       <p class="home_feature_description">{{ description }}</p>
-      <router-link :to="to" class="overview_link">{{ link }} <span aria-hidden="true">↗</span></router-link>
+      <router-link v-if="to && link" :to="to" class="overview_link">{{ link }} <span aria-hidden="true">↗</span></router-link>
       <slot name="note" />
     </div>
     <div class="home_feature_visual"><slot /></div>

@@ -8,6 +8,7 @@ import './assets/styles/smart_build.css'
 import './assets/styles/config_plan.css'
 import './assets/styles/ai_chat.css'
 import './assets/styles/hardware_compare.css'
+import './assets/styles/visual.css'
 
 const app = createApp(App)
 

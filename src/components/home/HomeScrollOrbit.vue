@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { createCubeBrandTextures } from './cubeBrandTextures'
 
 const props = defineProps<{ progress: number; reducedMotion: boolean }>()
 const host = ref<HTMLElement | null>(null)
@@ -20,11 +21,15 @@ let storyHeight = 0
 let entryY = 0
 let storyTop = 0
 let entryHeadDistance = 0
-const cubeSpacing = 66
+// A slightly longer span gives the 16 cubes more room without changing the path.
+const curveLength = 1800
+const cubeCount = 16
+const cubeSpacing = curveLength / (cubeCount - 1)
+let brandTextures: HTMLCanvasElement[] = []
+let disposed = false
 let textBounds: { left: number; right: number; top: number; bottom: number }[] = []
 let observer: ResizeObserver | undefined
 let intersection: IntersectionObserver | undefined
-const cubeCount = 26
 const corners: Point[] = [
   { x: -1, y: -1, z: -1 }, { x: 1, y: -1, z: -1 },
   { x: 1, y: 1, z: -1 }, { x: -1, y: 1, z: -1 },
@@ -32,6 +37,22 @@ const corners: Point[] = [
   { x: 1, y: 1, z: 1 }, { x: -1, y: 1, z: 1 },
 ]
 const faces = [[0, 1, 2, 3], [4, 7, 6, 5], [0, 4, 5, 1], [3, 2, 6, 7], [1, 5, 6, 2], [0, 3, 7, 4]]
+const cubePalette = {
+  light: [240, 236, 255], // #F0ECFF: the previous pale sticker tone, across the full face
+  side: [205, 199, 229], // #CDC7E5
+  dark: [112, 104, 137], // #706889
+  background: [18, 17, 23],
+} as const
+
+function faceColor(depth: number, visibility: number) {
+  const target = depth >= 0 ? cubePalette.light : cubePalette.dark
+  const amount = Math.min(1, Math.abs(depth))
+  const channels = cubePalette.side.map((channel, index) => {
+    const lit = channel + (target[index]! - channel) * amount
+    return Math.round(lit * visibility + cubePalette.background[index]! * (1 - visibility))
+  })
+  return `rgb(${channels.join(', ')})`
+}
 
 function rotate(point: Point, a: number, b: number, c: number): Point {
   const x = point.x * Math.cos(b) + point.z * Math.sin(b)
@@ -107,7 +128,7 @@ function buildTrack() {
     const perspective = 1600 / (1600 - point.z)
     return width / 2 + (point.x - width / 2) * perspective <= width - 80
   })
-  entryHeadDistance = (firstVisible?.distance ?? 0) + cubeSpacing * (mobile ? 1.5 : 3)
+  entryHeadDistance = (firstVisible?.distance ?? 0) + (mobile ? 99 : 198)
 }
 
 function pointAt(distance: number): Point | undefined {
@@ -167,7 +188,7 @@ function draw(now: number) {
       const distance = Math.hypot(Math.max(bounds.left - x, 0, x - bounds.right), Math.max(bounds.top - y, 0, y - bounds.bottom))
       clearance = Math.min(clearance, Math.min(1, distance / 40))
     }
-    cubes.push({ point: { x, y: y - offset, z: point.z }, index, size: (mobile ? 7 : 13) * perspective, opacity: (.1 + front * .85) * (.08 + clearance * .92) })
+    cubes.push({ point: { x, y: y - offset, z: point.z }, index, size: (mobile ? 8 : 16) * perspective, opacity: (.1 + front * .85) * (.08 + clearance * .92) })
   }
   cubes.sort((a, b) => a.point.z - b.point.z)
   for (const cube of cubes) {
@@ -188,29 +209,26 @@ function draw(now: number) {
         else context.lineTo(point.x, point.y)
       })
       context.closePath()
-      const brightness = 61 + face.depth * 19
-      const shade = brightness * cube.opacity + 7 * (1 - cube.opacity)
-      context.fillStyle = `hsl(240 8% ${shade}%)`
+      context.fillStyle = faceColor(face.depth, cube.opacity)
       context.fill()
-      context.strokeStyle = `hsla(245 25% 95% / ${cube.opacity * .22})`
+      context.strokeStyle = context.fillStyle
       context.lineWidth = .6
       context.stroke()
-      // Original face detail echoes a circuit board without copying third-party logos.
-      if (face.index === 1 && face.depth > .2) {
-        const vertices = face.indices.map(index => points[index]!)
-        const centerX = vertices.reduce((sum, p) => sum + p.x, 0) / 4
-        const centerY = vertices.reduce((sum, p) => sum + p.y, 0) / 4
-        context.beginPath()
-        vertices.forEach((point, index) => {
-          const x = centerX + (point.x - centerX) * .55
-          const y = centerY + (point.y - centerY) * .55
-          if (index === 0) context.moveTo(x, y)
-          else context.lineTo(x, y)
-        })
-        context.closePath()
-        context.strokeStyle = cube.index % 2 ? `rgba(98, 207, 173, ${cube.opacity})` : `rgba(130, 108, 210, ${cube.opacity})`
-        context.lineWidth = 1.4
-        context.stroke()
+      const texture = brandTextures[cube.index]
+      if (texture && face.depth > .12) {
+        // Map the sticker into the face's local axes so it rotates and foreshortens.
+        const origin = points[face.indices[0]!]!
+        const right = points[face.indices[3]!]!
+        const bottom = points[face.indices[1]!]!
+        context.save()
+        context.transform(
+          (right.x - origin.x) / 128, (right.y - origin.y) / 128,
+          (bottom.x - origin.x) / 128, (bottom.y - origin.y) / 128,
+          origin.x, origin.y,
+        )
+        context.globalAlpha = entranceOpacity * cube.opacity * (.72 + face.depth * .28)
+        context.drawImage(texture, 10, 10, 108, 108)
+        context.restore()
       }
     }
   }
@@ -222,6 +240,13 @@ function draw(now: number) {
 function schedule() { if (!frame) frame = requestAnimationFrame(draw) }
 watch(() => [props.progress, props.reducedMotion], schedule)
 onMounted(() => {
+  void createCubeBrandTextures().then(textures => {
+    if (disposed) return
+    brandTextures = textures
+    schedule()
+  }).catch(() => {
+    // Geometry remains available even if the browser cannot decode a sticker.
+  })
   observer = new ResizeObserver(measure)
   if (host.value?.parentElement) observer.observe(host.value.parentElement)
   intersection = new IntersectionObserver(entries => {
@@ -235,6 +260,8 @@ onMounted(() => {
   measure()
 })
 onUnmounted(() => {
+  disposed = true
+  brandTextures = []
   cancelAnimationFrame(frame)
   observer?.disconnect()
   intersection?.disconnect()

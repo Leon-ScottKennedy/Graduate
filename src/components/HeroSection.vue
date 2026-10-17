@@ -1,4 +1,11 @@
 ﻿<script setup lang="ts">
+function scrollToFeatures() {
+  document.getElementById('home-features')?.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    block: 'start'
+  })
+}
+
 const cubes = [
   { top: '18%', left: '8%', width: '42px', height: '42px', animationDelay: '0s' },
   { top: '62%', left: '14%', width: '28px', height: '28px', animationDelay: '2s' },
@@ -21,11 +28,10 @@ const cubes = [
     <div class="hero_intro">
       <div class="hero_copy">
         <p class="hero_eyebrow">NEXBUILD / 为你的下一台电脑</p>
-        <h1 class="hero_title">少一点纠结。<br />多一点<span>适合。</span></h1>
+        <h1 class="hero_title"><span class="hero_title_line">少一点纠结。</span><span class="hero_title_line">多一点适合。</span></h1>
         <p class="hero_subtitle">从第一份配置，到每一个硬件选择。<br />NexBuild 让装机思路更清晰，让选择更简单。</p>
         <div class="hero_actions">
-          <router-link to="/smart-build" class="hero_btn hero_btn_primary">开始搭配 <span aria-hidden="true">↗</span></router-link>
-          <router-link to="/config-plan" class="hero_btn hero_btn_ghost">浏览配置方案</router-link>
+          <a href="#home-features" class="hero_btn hero_btn_primary" @click.prevent="scrollToFeatures">了解 NexBuild <span aria-hidden="true">↓</span></a>
         </div>
         <p class="hero_note">预算 · 用途 · 硬件，一站理清。</p>
       </div>

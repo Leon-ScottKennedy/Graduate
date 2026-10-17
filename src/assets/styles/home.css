@@ -1,5 +1,5 @@
 ﻿.home_story { position: relative; isolation: isolate; }
-.home_overview { color: var(--text-primary); }
+.home_overview { color: var(--text-primary); scroll-margin-top: 80px; }
 .home_feature { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 200px; max-width: 1120px; margin-inline: auto; min-height: 650px; padding-block: 100px; border-top: 1px solid var(--border-divider); }
 .home_feature_copy { width: 100%; max-width: 310px; }
 .home_feature_copy h2 { max-width: 7.5em; margin-top: 22px; font-size: clamp(32px, 3.4vw, 46px); line-height: 1.35; letter-spacing: -1px; text-wrap: balance; }
