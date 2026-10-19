@@ -48,3 +48,27 @@ __screenshots__/
 **/__pycache__/
 *.pyc
 /server/storage/
+
+# Downloaded vendor SDK archives (keep local copies)
+/jd-api-sdk-*.zip
+/oss_*_null_*.zip
+
+# Local Python environments, caches and database sidecars
+**/venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.sqlite-*
+*.db-wal
+*.db-shm
+
+# Private keys and local credential exports
+*.key
+*.pem
+*.p12
+*.pfx
+.env.bak
+.env.backup

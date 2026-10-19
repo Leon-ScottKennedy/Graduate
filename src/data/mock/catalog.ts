@@ -1,5 +1,6 @@
 // Synthetic fixtures for the interactive prototype; not live prices or recommendations.
 import type { PartGroup } from '../../types/hardware'
+import { budgetOptions } from './budgetOptions'
 export const demoParts: PartGroup[] = [
   {
     id: 'cpu',
@@ -135,6 +136,7 @@ export const demoParts: PartGroup[] = [
         id: 'power-a',
         brand: '美商海盗船 CORSAIR',
         name: '美商海盗船 RM650',
+        psuWatts: 650,
         price: 399,
         specs: '650W · 金牌 · 全模组',
         tag: '基础供电',
@@ -143,6 +145,7 @@ export const demoParts: PartGroup[] = [
         id: 'power-b',
         brand: '美商海盗船 CORSAIR',
         name: '美商海盗船 RM750',
+        psuWatts: 750,
         price: 499,
         specs: '750W · 金牌 · 全模组',
         tag: '升级余量',
@@ -191,6 +194,7 @@ export const demoParts: PartGroup[] = [
         id: 'cooler-b',
         brand: '利民 Thermalright',
         name: '利民 Peerless Assassin 120 SE',
+        coolingTier: 1,
         price: 250,
         specs: '双塔风冷 · 安装兼容性待核验',
         tag: '双塔方案',
@@ -198,4 +202,5 @@ export const demoParts: PartGroup[] = [
     ],
   },
 ]
+for (const group of demoParts) group.options.push(...(budgetOptions[group.id] ?? []))
 export const demoSnapshot = '2026-10-17 10:30'

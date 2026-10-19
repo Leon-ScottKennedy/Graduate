@@ -1,13 +1,194 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { postJson } from '../../services/apiClient'
+import { checkBuildCompatibility } from '../../services/buildCompatibility'
+import type { PartOption } from '../../types/hardware'
 
-defineProps<{ question: string; reply: string; questions: string[] }>()
-const emit = defineEmits<{ ask: [question: string] }>()
+const props = defineProps<{
+  build: Record<string, PartOption>
+  budget: number
+  usage: string
+  total: number
+  questions: string[]
+}>()
+type Source = { title: string; url: string }
+const messages = ref<
+  { role: 'user' | 'assistant'; content: string; sources?: Source[]; searched?: boolean }[]
+>([])
+const busy = ref(false)
+const error = ref('')
+const body = ref<HTMLDivElement | null>(null)
+let controller: AbortController | undefined
+async function scroll() {
+  await nextTick()
+  body.value?.scrollTo({ top: body.value.scrollHeight })
+}
+async function ask(question: string, retry = false) {
+  if (busy.value || !question.trim()) return
+  if (retry) messages.value.pop()
+  const history = messages.value
+    .slice(-10)
+    .map(({ role, content }) => ({ role, content: content.slice(0, 1800) }))
+  messages.value.push({ role: 'user', content: question })
+  messages.value = messages.value.slice(-40)
+  draft.value = ''
+  error.value = ''
+  busy.value = true
+  const request = new AbortController()
+  controller = request
+  const facts = Object.fromEntries([
+    ...Object.entries(props.build).flatMap(([category, option]) =>
+      Object.entries(option)
+        .filter(([key, value]) => key !== 'id' && value !== undefined)
+        .map(([key, value]) => [
+          `build.${category}.${key}`,
+          typeof value === 'string'
+            ? value
+            : JSON.stringify(
+                key === 'priceSource'
+                  ? {
+                      shop: option.priceSource?.shop,
+                      platform: option.priceSource?.platform,
+                      observedAt: option.priceSource?.observedAt,
+                      basis: option.priceSource?.basis,
+                    }
+                  : value,
+              ),
+        ]),
+    ),
+    ['context.budget', String(props.budget)],
+    ['context.total', String(props.total)],
+    ['context.usage', props.usage],
+    [
+      'context.priceBasis',
+      '未标 priceSource 的配件是预设参考价；标记 priceSource 的配件采用用户确认的人工店铺报价（含运费），时间见 observedAt，均不是实时价格。',
+    ],
+  ])
+  void scroll()
+  try {
+    const result = await postJson<{ answer: string; sources: Source[]; searched: boolean }>(
+      '/ai/chat',
+      {
+        facts,
+        rules: checkBuildCompatibility(props.build),
+        question,
+        history,
+      },
+      request.signal,
+    )
+    if (!request.signal.aborted)
+      messages.value.push({
+        role: 'assistant',
+        content: result.answer,
+        sources: result.sources,
+        searched: result.searched,
+      })
+  } catch (failure) {
+    if (!request.signal.aborted)
+      error.value = failure instanceof Error ? failure.message : '回答失败，请重试'
+  } finally {
+    if (controller === request) {
+      busy.value = false
+      void scroll()
+    }
+  }
+}
+function retry() {
+  const last = messages.value.at(-1)
+  if (last?.role === 'user') void ask(last.content, true)
+}
+watch(
+  () => JSON.stringify([props.build, props.budget, props.usage, props.total]),
+  () => {
+    controller?.abort()
+    controller = undefined
+    busy.value = false
+    messages.value = []
+    error.value = ''
+  },
+)
 const open = ref(false)
 const draft = ref('')
 const launcher = ref<HTMLButtonElement | null>(null)
 const input = ref<HTMLInputElement | null>(null)
 const hintVisible = ref(false)
+const position = ref({ x: 80, y: 150 })
+const size = ref({ width: 340, height: 420 })
+let resizing: { id: number; x: number; y: number; width: number; height: number } | undefined
+const bounds = ref({ top: 80, bottom: 700 })
+const ballTop = ref(120)
+let drag: { id: number; x: number; y: number; left: number; top: number } | undefined
+function constrain() {
+  const main = document.querySelector('.app_main')?.getBoundingClientRect()
+  const nav = document.querySelector('.nav_top')?.getBoundingClientRect()
+  const top = Math.max(8, main?.top ?? 0, nav?.bottom ?? 0)
+  const bottom = Math.max(
+    top,
+    Math.min(window.innerHeight - 8, main?.bottom ?? window.innerHeight - 8),
+  )
+  bounds.value = { top, bottom }
+  ballTop.value = Math.max(top, Math.min(top + 12, bottom - 44))
+  const width = Math.min(size.value.width, window.innerWidth - 32)
+  const height = Math.min(size.value.height, bottom - top)
+  size.value = { width, height }
+  position.value = {
+    x: Math.max(16, Math.min(position.value.x, window.innerWidth - width - 16)),
+    y: Math.max(top, Math.min(position.value.y, bottom - height)),
+  }
+}
+function startDrag(event: PointerEvent) {
+  if (event.button !== 0 || (event.target as HTMLElement).closest('button')) return
+  drag = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    left: position.value.x,
+    top: position.value.y,
+  }
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+}
+function moveDrag(event: PointerEvent) {
+  if (!drag || drag.id !== event.pointerId) return
+  position.value = { x: drag.left + event.clientX - drag.x, y: drag.top + event.clientY - drag.y }
+  constrain()
+}
+function endDrag() {
+  drag = undefined
+}
+function startResize(event: PointerEvent) {
+  if (event.button !== 0) return
+  resizing = { id: event.pointerId, x: event.clientX, y: event.clientY, ...size.value }
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+  event.preventDefault()
+}
+function resizeBy(width: number, height: number) {
+  size.value = {
+    width: Math.min(Math.max(280, width), window.innerWidth - position.value.x - 16),
+    height: Math.min(Math.max(280, height), bounds.value.bottom - position.value.y),
+  }
+}
+function moveResize(event: PointerEvent) {
+  if (!resizing || resizing.id !== event.pointerId) return
+  resizeBy(
+    resizing.width + event.clientX - resizing.x,
+    resizing.height + event.clientY - resizing.y,
+  )
+}
+function endResize() {
+  resizing = undefined
+}
+function keyboardResize(event: KeyboardEvent) {
+  const changes: Record<string, [number, number]> = {
+    ArrowRight: [20, 0],
+    ArrowLeft: [-20, 0],
+    ArrowDown: [0, 20],
+    ArrowUp: [0, -20],
+  }
+  const change = changes[event.key]
+  if (!change) return
+  event.preventDefault()
+  resizeBy(size.value.width + change[0], size.value.height + change[1])
+}
 let hintTimer: ReturnType<typeof setTimeout> | undefined
 let reminderTimer: ReturnType<typeof setInterval> | undefined
 
@@ -20,10 +201,16 @@ function showHint() {
   }, 5000)
 }
 onMounted(() => {
+  constrain()
+  window.addEventListener('resize', constrain)
+  window.addEventListener('scroll', constrain, true)
   showHint()
   reminderTimer = setInterval(showHint, 60000)
 })
 onUnmounted(() => {
+  window.removeEventListener('resize', constrain)
+  window.removeEventListener('scroll', constrain, true)
+  controller?.abort()
   clearTimeout(hintTimer)
   clearInterval(reminderTimer)
 })
@@ -33,19 +220,26 @@ async function toggle() {
   hintVisible.value = false
   clearTimeout(hintTimer)
   await nextTick()
+  constrain()
   if (open.value) input.value?.focus()
   else launcher.value?.focus()
 }
 function send() {
   const question = draft.value.trim()
   if (!question) return
-  emit('ask', question)
-  draft.value = ''
+  void ask(question)
 }
 </script>
 
 <template>
-  <div class="nb-floating-assistant" :class="{ 'is-open': open }">
+  <div
+    class="nb-floating-assistant"
+    :class="{ 'is-open': open }"
+    :style="{
+      top: `${ballTop}px`,
+      visibility: bounds.bottom - bounds.top < 80 ? 'hidden' : undefined,
+    }"
+  >
     <Transition name="assistant-hint">
       <button v-if="hintVisible && !open" class="nb-assistant-hint" type="button" @click="toggle">
         有装机问题？问问助手 <span aria-hidden="true">→</span>
@@ -55,26 +249,64 @@ function send() {
       v-if="open"
       id="build-chat"
       class="nb-chat"
+      :style="{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+      }"
       role="dialog"
       aria-labelledby="build-chat-title"
       @keydown.esc.stop="toggle"
     >
-      <header class="nb-chat-header">
+      <header
+        class="nb-chat-header"
+        title="拖动标题栏移动对话框"
+        @pointerdown="startDrag"
+        @pointermove="moveDrag"
+        @pointerup="endDrag"
+        @pointercancel="endDrag"
+        @lostpointercapture="endDrag"
+      >
         <h2 id="build-chat-title">装机助手</h2>
-        <span class="nb-badge">AI 未接入</span>
         <button type="button" class="nb-chat-close" aria-label="关闭装机助手" @click="toggle">
           ×
         </button>
       </header>
-      <div class="nb-chat-body" aria-live="polite">
-        <p v-if="!question" class="nb-chat-placeholder">有什么装机问题？</p>
-        <template v-else>
-          <p class="nb-chat-question">{{ question }}</p>
-          <p class="nb-chat-answer">{{ reply }}</p>
-        </template>
+      <div ref="body" class="nb-chat-body" aria-live="polite" :aria-busy="busy">
+        <p v-if="!messages.length" class="nb-chat-placeholder">结合当前配置，有什么装机问题？</p>
+        <div
+          v-for="(message, index) in messages"
+          :key="index"
+          :class="message.role === 'user' ? 'nb-chat-question' : 'nb-chat-answer'"
+        >
+          <p>{{ message.content }}</p>
+          <div v-if="message.sources?.length" class="nb-chat-sources">
+            <span>参考来源</span>
+            <a
+              v-for="(source, i) in message.sources"
+              :key="source.url"
+              :href="source.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              >{{ i + 1 }}. {{ source.title }} ↗</a
+            >
+          </div>
+          <small v-else-if="message.searched">已检索，未返回可引用来源</small>
+        </div>
+        <p v-if="busy" role="status">正在查阅资料并回答…</p>
+        <p v-if="error" role="alert">
+          {{ error }} <button type="button" @click="retry">重试</button>
+        </p>
       </div>
       <div class="nb-chat-suggestions">
-        <button v-for="item in questions" :key="item" type="button" @click="emit('ask', item)">
+        <button
+          v-for="item in questions"
+          :key="item"
+          type="button"
+          :disabled="busy"
+          @click="ask(item)"
+        >
           {{ item }}
         </button>
       </div>
@@ -86,8 +318,22 @@ function send() {
           placeholder="输入问题…"
           maxlength="500"
         />
-        <button type="submit" :disabled="!draft.trim()" aria-label="发送问题">↑</button>
+        <button type="submit" :disabled="busy || !draft.trim()" aria-label="发送问题">↑</button>
       </form>
+      <button
+        class="nb-chat-resize"
+        type="button"
+        aria-label="调整对话框大小，拖动或使用方向键"
+        title="拖动调整大小"
+        @pointerdown="startResize"
+        @pointermove="moveResize"
+        @pointerup="endResize"
+        @pointercancel="endResize"
+        @lostpointercapture="endResize"
+        @keydown="keyboardResize"
+      >
+        <span aria-hidden="true">◢</span>
+      </button>
     </section>
     <button
       ref="launcher"
@@ -116,11 +362,10 @@ function send() {
 
 <style scoped>
 .nb-floating-assistant {
-  --assistant-left: max(clamp(16px, 4vw, 110px), env(safe-area-inset-left));
-  --assistant-top: clamp(100px, 12dvh, 160px);
+  --assistant-right: max(18px, env(safe-area-inset-right));
+  --assistant-bottom: max(18px, env(safe-area-inset-bottom));
   position: fixed;
-  left: var(--assistant-left);
-  top: var(--assistant-top);
+  left: max(18px, env(safe-area-inset-left));
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -129,7 +374,7 @@ function send() {
 }
 .nb-assistant-hint {
   position: absolute;
-  left: 66px;
+  left: 58px;
   top: 50%;
   transform: translateY(-50%);
   width: max-content;
@@ -167,8 +412,8 @@ function send() {
 .nb-assistant-ball {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border-radius: 50%;
   border: 1px solid #b49dd9;
@@ -193,10 +438,8 @@ function send() {
 }
 .nb-chat {
   position: fixed;
-  left: 20px;
-  top: calc(var(--assistant-top) + 66px);
-  width: 360px;
-  max-height: calc(100dvh - var(--assistant-top) - 82px);
+  width: min(340px, calc(100vw - 32px));
+  height: min(420px, 65dvh);
   display: flex;
   flex-direction: column;
   background: #1c1a24;
@@ -206,11 +449,18 @@ function send() {
   overflow: hidden;
 }
 .nb-chat-header {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 16px 18px;
   border-bottom: 1px solid #383140;
+}
+.nb-chat-header:active {
+  cursor: grabbing;
 }
 .nb-chat-header h2 {
   flex: 1;
@@ -233,7 +483,9 @@ function send() {
   border-radius: 4px;
 }
 .nb-chat-body {
-  min-height: 155px;
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
   overflow-y: auto;
   padding: 18px;
   font-size: 12px;
@@ -252,13 +504,28 @@ function send() {
   overflow-wrap: anywhere;
 }
 .nb-chat-answer {
+  white-space: pre-line;
+  margin-bottom: 14px;
   color: #d2c7de;
   background: #28232f;
   padding: 11px 12px;
   border-radius: 2px 9px 9px;
   overflow-wrap: anywhere;
 }
+.nb-chat-sources {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #51405e;
+  font-size: 11px;
+  white-space: normal;
+}
+.nb-chat-sources a {
+  display: block;
+  color: #cbb6ec;
+  margin-top: 5px;
+}
 .nb-chat-suggestions {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
@@ -276,11 +543,25 @@ function send() {
   background: #40304e;
 }
 .nb-chat-form {
+  flex-shrink: 0;
   display: flex;
   gap: 10px;
   align-items: center;
   border-top: 1px solid #383140;
-  padding: 13px 16px;
+  padding: 13px 24px 13px 16px;
+}
+.nb-chat-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: transparent;
+  color: #a68abe;
+  cursor: nwse-resize;
+  touch-action: none;
+  font-size: 14px;
 }
 .nb-chat-form input {
   width: 100%;
@@ -300,51 +581,6 @@ function send() {
   border: 0;
   border-radius: 6px;
   font-size: 18px;
-}
-@media (max-width: 1100px) {
-  .nb-floating-assistant {
-    position: relative;
-    left: auto;
-    top: auto;
-    height: 380px;
-    margin-bottom: 24px;
-  }
-  .nb-assistant-ball {
-    position: fixed;
-    left: var(--assistant-left);
-    top: var(--assistant-top);
-  }
-  .nb-assistant-hint {
-    position: fixed;
-    left: calc(var(--assistant-left) + 66px);
-    top: calc(var(--assistant-top) + 26px);
-  }
-  .is-open .nb-assistant-ball {
-    display: none;
-  }
-  .is-open .nb-chat {
-    position: static;
-    width: 100%;
-    height: 380px;
-    max-height: 380px;
-  }
-}
-@media (max-width: 780px) {
-  .nb-floating-assistant {
-    --assistant-left: max(12px, env(safe-area-inset-left));
-  }
-  .nb-assistant-ball {
-    width: 48px;
-    height: 48px;
-  }
-  .nb-assistant-hint {
-    left: calc(var(--assistant-left) + 60px);
-  }
-  .nb-chat {
-    left: 16px;
-    top: max(76px, env(safe-area-inset-top));
-    max-height: calc(100dvh - max(76px, env(safe-area-inset-top)) - 16px);
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .assistant-hint-enter-active,

@@ -13,3 +13,36 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Match document and nested scrolling surfaces to the dark theme. */
+:root {
+  color-scheme: dark;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #756184 #1b1822;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: #1b1822;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #756184;
+  border: 2px solid #1b1822;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #a086b5;
+}
+*::-webkit-scrollbar-corner {
+  background: #1b1822;
+}
+@media (forced-colors: active) {
+  * {
+    scrollbar-color: auto;
+  }
+}

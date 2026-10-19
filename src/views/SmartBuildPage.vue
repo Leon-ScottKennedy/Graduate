@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import BuildPartInspector from '../components/build/BuildPartInspector.vue'
 import BuildAssistant from '../components/build/BuildAssistant.vue'
 import { getBuildCatalog } from '../services/catalogService'
+import { selectBuild } from '../services/buildSelection'
+import { checkBuildCompatibility, checkReplacement } from '../services/buildCompatibility'
 import type { PartOption } from '../types/hardware'
 import { money } from '../utils/format'
 import '../assets/styles/build-workspace.css'
 
 const demoParts = getBuildCatalog()
 const budget = ref(9000)
+const budgetInput = ref<number | string>(budget.value)
 const usage = ref('游戏电竞')
 const preference = ref('均衡搭配')
 const extra = ref('')
@@ -16,7 +19,8 @@ const generatedFor = ref('游戏电竞 · 均衡搭配')
 const usageOptions = ['游戏电竞', '内容创作', '办公学习', 'AI 计算']
 const preferences = ['均衡搭配', '控制预算', '静音优先']
 const chosen = ref<Record<string, PartOption>>(
-  Object.fromEntries(demoParts.map((part) => [part.id, part.options[0]])),
+  selectBuild(demoParts, budget.value, usage.value, preference.value)?.chosen ??
+    Object.fromEntries(demoParts.map((part) => [part.id, part.options[0]])),
 )
 const selectedId = ref('gpu')
 const selectedGroup = computed(
@@ -29,6 +33,7 @@ const rows = computed(() =>
   demoParts.map((group) => ({ ...group, selected: chosen.value[group.id] ?? group.options[0] })),
 )
 const total = computed(() => rows.value.reduce((sum, row) => sum + row.selected.price, 0))
+const quotedCount = computed(() => rows.value.filter((row) => row.selected.priceSource).length)
 const hoveredAllocation = ref<string | null>(null)
 const focusedAllocation = ref<string | null>(null)
 const activeAllocation = computed(() =>
@@ -39,68 +44,77 @@ function allocationPercent(price: number) {
 }
 const remaining = computed(() => budget.value - total.value)
 const notice = ref('')
-const activeQuestion = ref('')
-const pendingChanges = ref(false)
+const compatibility = computed(() => checkBuildCompatibility(chosen.value))
+let budgetTimer: ReturnType<typeof setTimeout> | undefined
 const requests = ['预算怎么分配？', '报价从哪里来？', '这套配置兼容吗？']
 
 function selectUsage(value: string) {
   usage.value = value
-  pendingChanges.value = true
 }
 function selectPreference(value: string) {
   preference.value = value
-  pendingChanges.value = true
 }
-function generate() {
-  budget.value = Math.min(30000, Math.max(3000, Number(budget.value) || 9000))
-  const upgraded = budget.value >= 11000 && preference.value !== '控制预算'
-  chosen.value = Object.fromEntries(
-    demoParts.map((group) => {
-      const useUpgrade =
-        (upgraded && ['cpu', 'gpu', 'power'].includes(group.id)) ||
-        (usage.value === '内容创作' && budget.value >= 9000 && ['ram', 'ssd'].includes(group.id)) ||
-        (preference.value === '静音优先' && ['case', 'cooler'].includes(group.id))
-      return [group.id, group.options[useUpgrade ? 1 : 0]]
-    }),
+function updateConfiguration() {
+  clearTimeout(budgetTimer)
+  const previousBudget = budget.value
+  const amount = Number(budgetInput.value)
+  budget.value =
+    String(budgetInput.value).trim() && Number.isFinite(amount)
+      ? Math.min(30000, Math.max(3000, Math.round(amount)))
+      : budget.value
+  budgetInput.value = budget.value
+  if (
+    budget.value === previousBudget &&
+    generatedFor.value === `${usage.value} · ${preference.value}`
   )
-  generatedFor.value = `${usage.value} · ${preference.value}`
-  pendingChanges.value = false
-  notice.value = '配置已更新'
-}
-function replace(option: PartOption) {
-  chosen.value = { ...chosen.value, [selectedGroup.value.id]: option }
-  notice.value = `已替换${selectedGroup.value.label}`
-}
-const assistantReply = computed(() => {
-  const question = activeQuestion.value
-  if (!question) return ''
-  if (question === requests[0]) {
-    const gpu = chosen.value.gpu!
-    return `当前示例总价 ${money(total.value)}，其中显卡 ${money(gpu.price)}，占比约 ${Math.round((gpu.price / total.value) * 100)}%。${remaining.value >= 0 ? `预算余量 ${money(remaining.value)}。` : `超过预算 ${money(-remaining.value)}，可在候选对比中更换配件。`}`
-  } else if (question === requests[1]) {
-    return '当前为示例报价，尚未接入京东、淘宝实时数据。'
-  } else if (question === requests[2]) {
-    return 'AM5 / DDR5 接口一致；BIOS、尺寸与供电兼容性尚未校验。'
+    return
+  const selection = selectBuild(demoParts, budget.value, usage.value, preference.value)
+  if (!selection) {
+    notice.value = '当前候选无法组成预算内的完整配置，请调整预算。'
+    return
   }
-  return 'AI 尚未接入，暂不支持自由问答。可点击快捷问题查看当前配置。'
+  chosen.value = selection.chosen
+  generatedFor.value = `${usage.value} · ${preference.value}`
+  notice.value = '配置已自动更新'
+}
+watch([usage, preference], updateConfiguration)
+watch(budgetInput, (value) => {
+  clearTimeout(budgetTimer)
+  const amount = Number(value)
+  if (
+    String(value).trim() &&
+    Number.isFinite(amount) &&
+    amount >= 3000 &&
+    amount <= 30000 &&
+    amount !== budget.value
+  ) {
+    budgetTimer = setTimeout(updateConfiguration, 300)
+  }
 })
-function ask(question: string) {
-  activeQuestion.value = question
+onUnmounted(() => clearTimeout(budgetTimer))
+function replace(option: PartOption) {
+  if (option.requiresQuote || option.price <= 0) {
+    notice.value = '该型号尚无有效报价，请先录入并采用店铺报价。'
+    return
+  }
+  const check = checkReplacement(chosen.value, selectedGroup.value.id, option)
+  if (check.errors.length) {
+    notice.value = `无法替换：${check.errors[0]!.message}`
+    return
+  }
+  chosen.value = { ...chosen.value, [selectedGroup.value.id]: option }
+  notice.value = `已替换${selectedGroup.value.label}，${check.warnings.length} 项建议提醒，${check.pending.length} 项待核验`
 }
 </script>
 
 <template>
   <div class="nb-workspace">
-    <header class="nb-page-head">
-      <div>
-        <h1>智能装机</h1>
-      </div>
-    </header>
     <BuildAssistant
-      :question="activeQuestion"
-      :reply="assistantReply"
+      :build="chosen"
+      :budget="budget"
+      :usage="usage"
+      :total="total"
       :questions="requests"
-      @ask="ask"
     />
     <div class="nb-workbench">
       <aside class="nb-requirements nb-card">
@@ -109,30 +123,31 @@ function ask(question: string) {
             <h2>装机需求</h2>
           </div>
         </div>
-        <form @submit.prevent="generate">
+        <form @submit.prevent="updateConfiguration">
           <label class="nb-label" for="build-budget">整机预算 <span>不含显示器与外设</span></label>
           <div class="nb-budget-input">
             <span>¥</span
             ><input
               id="build-budget"
-              v-model.number="budget"
+              v-model.number="budgetInput"
               type="number"
               min="3000"
               max="30000"
               step="100"
               required
-              @input="pendingChanges = true"
+              @blur="updateConfiguration"
+              @keydown.enter.prevent="updateConfiguration"
             /><small>元</small>
           </div>
           <input
-            v-model.number="budget"
+            v-model.number="budgetInput"
             aria-label="调整整机预算"
             class="nb-range"
             type="range"
             min="3000"
             max="30000"
             step="100"
-            @input="pendingChanges = true"
+            @change="updateConfiguration"
           />
           <div class="nb-range-labels"><span>¥3,000</span><span>¥30,000</span></div>
           <fieldset>
@@ -173,11 +188,7 @@ function ask(question: string) {
             placeholder="例如：已有硬盘、希望白色机箱……"
             rows="3"
             maxlength="300"
-            @input="pendingChanges = true"
           ></textarea>
-          <button class="nb-button nb-generate" type="submit">
-            {{ pendingChanges ? '更新配置' : '生成配置' }} <span>↗</span>
-          </button>
         </form>
       </aside>
       <div class="nb-main-column">
@@ -187,14 +198,18 @@ function ask(question: string) {
               <h2 id="build-list-title">配置清单</h2>
               <p>
                 {{ generatedFor }}
-                <span v-if="pendingChanges" class="nb-warm">· 待更新</span>
               </p>
             </div>
             <span class="nb-badge">{{ rows.length }} 项配置</span>
           </div>
           <div class="nb-total-row">
             <div>
-              <span>整机总价</span><strong>{{ money(total) }}</strong>
+              <span
+                >整机总价 ·
+                {{
+                  quotedCount ? `${quotedCount}/8 项采用人工店铺报价，其余参考价` : '预设参考价'
+                }}</span
+              ><strong>{{ money(total) }}</strong>
             </div>
             <div class="nb-budget-state" :class="{ over: remaining < 0 }">
               <span>{{ remaining >= 0 ? '预算余量' : '超出预算' }}</span
@@ -249,21 +264,40 @@ function ask(question: string) {
               ><strong :title="row.selected.name">{{ row.selected.name }}</strong></span
             ><span class="nb-part-price"
               >{{ money(row.selected.price)
-              }}<small
+              }}<small v-if="row.selected.priceSource" :title="row.selected.priceSource.observedAt"
+                >{{ row.selected.priceSource.shop }} · 人工报价</small
+              ><small
                 >{{ allocationPercent(row.selected.price) }} ·
                 {{ selectedId === row.id ? '已选' : '查看' }} →</small
               ></span
             >
           </button>
-          <div class="nb-check-note">
-            <span>◇</span>
-            <div>
-              <strong>兼容性未校验</strong>
+          <details class="nb-check-note nb-compatibility-summary">
+            <summary>
+              {{
+                compatibility.errors.length
+                  ? `${compatibility.errors.length} 项兼容冲突`
+                  : '基础检查无已知冲突'
+              }}
+              · {{ compatibility.warnings.length }} 项建议 ·
+              {{ compatibility.pending.length }} 项待核验
+            </summary>
+            <div class="nb-compatibility-items">
+              <p v-for="issue in compatibility.warnings" :key="issue.code">
+                建议：{{ issue.message }}
+              </p>
+              <p v-for="issue in compatibility.errors" :key="issue.code">{{ issue.message }}</p>
+              <p v-for="issue in compatibility.pending" :key="issue.code">{{ issue.message }}</p>
             </div>
-          </div>
+          </details>
         </section>
         <p v-if="notice" class="nb-live-message" role="status" aria-live="polite">{{ notice }}</p>
-        <BuildPartInspector :group="selectedGroup" :selected="selectedOption" @replace="replace" />
+        <BuildPartInspector
+          :group="selectedGroup"
+          :selected="selectedOption"
+          :build="chosen"
+          @replace="replace"
+        />
       </div>
     </div>
   </div>

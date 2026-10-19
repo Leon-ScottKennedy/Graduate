@@ -1,36 +1,10 @@
-import { demoParts, demoSnapshot } from '../data/mock/catalog'
-import type { ComparisonHardware, ConfigPlan, PartOption, ProductOffer } from '../types/hardware'
+import { demoParts } from '../data/mock/catalog'
+import type { ComparisonHardware, ConfigPlan, PartOption } from '../types/hardware'
 import { money } from '../utils/format'
 
 // Local provider for the existing prototype. Real API access lives in hardwareApi.ts.
 export function getBuildCatalog() {
   return demoParts
-}
-
-const demoOffers: ProductOffer[] = demoParts.flatMap((group) =>
-  group.options.flatMap((option) =>
-    [
-      { platform: 'jd' as const, shop: '品牌旗舰店 · 示例', difference: 0 },
-      { platform: 'taobao' as const, shop: '硬件专营店 · 示例', difference: 60 },
-      { platform: 'jd' as const, shop: '硬件自营店 · 示例', difference: 100 },
-    ].map((listing, index) => ({
-      id: `demo-offer-${option.id}-${index}`,
-      hardwareId: option.id,
-      platform: listing.platform,
-      productId: `demo-product-${option.id}-${index}`,
-      shop: listing.shop,
-      price: option.price + listing.difference,
-      currency: 'CNY' as const,
-      priceType: 'listed' as const,
-      productUrl: null,
-      collectedAt: demoSnapshot,
-      source: 'demo' as const,
-    })),
-  ),
-)
-
-export function getOffers(hardwareId: string) {
-  return demoOffers.filter((offer) => offer.hardwareId === hardwareId)
 }
 
 const planDefinitions = [
