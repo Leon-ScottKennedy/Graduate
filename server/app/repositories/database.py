@@ -25,6 +25,9 @@ class Database:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             connection.executescript(SCHEMA.read_text(encoding="utf-8"))
+            columns = {row['name'] for row in connection.execute('PRAGMA table_info(taobao_searches)')}
+            if 'tmall_only' not in columns:
+                connection.execute('ALTER TABLE taobao_searches ADD COLUMN tmall_only INTEGER NOT NULL DEFAULT 0')
 
     def list_hardware(self):
         with self.connect() as connection:

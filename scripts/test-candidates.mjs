@@ -11,7 +11,7 @@ loader.extensions['.ts'] = (module, filename) => {
     filename,
   )
 }
-const { selectCandidates } = loader('../src/services/candidateSelection.ts')
+const { selectSpecificationCandidates: selectCandidates, selectCandidates: selectPriceCandidates } = loader('../src/services/candidateSelection.ts')
 const { demoParts } = loader('../src/data/mock/catalog.ts')
 const { selectBuild } = loader('../src/services/buildSelection.ts')
 const { candidateOptions } = loader('../src/data/mock/candidateOptions.ts')
@@ -98,3 +98,30 @@ assert.ok(
 console.log(
   `Candidate regression checks passed: ${covered} base models; 192 budget/usage/category combinations`,
 )
+
+// Real shopping alternatives need not share a chipset, core count, capacity or wattage.
+for (const category of demoParts) {
+  for (const selected of category.options) {
+    const all = selectPriceCandidates(category, selected)
+    assert.ok(all.length >= selectCandidates(category, selected).length)
+    assert.ok(all.every((item) => item.id !== selected.id))
+    const nearby = selectPriceCandidates(category, selected, { priceRange: 0.35 })
+    assert.ok(nearby.every((item) => item.price > 0 && !item.requiresQuote && Math.abs(item.price / selected.price - 1) <= 0.350000001))
+    const priced = all.filter((item) => item.price > 0 && !item.requiresQuote)
+    for (let index = 1; index < priced.length; index++) {
+      assert.ok(Math.abs(priced[index].price-selected.price) >= Math.abs(priced[index-1].price-selected.price))
+    }
+  }
+}
+const widerGpu = selectPriceCandidates(gpu, gpu.options.find((item) => item.id === 'gpu-d'), { priceRange: 0.35 })
+assert.ok(widerGpu.some((item) => item.name.includes('4070 Ti SUPER')))
+assert.ok(selectPriceCandidates(gpu, current).some((item) => item.requiresQuote && item.name.includes('5070')))
+const nearCpu = selectPriceCandidates(cpu, cpu.options[1], { priceRange: 0.5 })
+assert.ok(nearCpu.some((item) => item.name.includes('7600')))
+assert.ok(nearCpu.some((item) => item.name.includes('7800X3D')))
+const power = demoParts.find((item) => item.id === 'power')
+assert.ok(selectPriceCandidates(power, power.options[0], { priceRange: 0.5 }).some((item) => item.psuWatts !== power.options[0].psuWatts))
+assert.ok(selectPriceCandidates(gpu, current, {brand: '华硕 ASUS'}).every((item) => item.brand === '华硕 ASUS'))
+assert.ok(selectPriceCandidates(gpu, current, {query: '5070'}).every((item) => item.name.includes('5070')))
+assert.equal(JSON.stringify(demoParts), catalogBefore)
+console.log('Price alternatives passed: cross-chip/core/wattage choices, filters, missing prices, stable price ordering')

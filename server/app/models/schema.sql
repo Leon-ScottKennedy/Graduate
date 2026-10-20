@@ -28,6 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_manual_price ON manual_quote_prices(quote_id, obs
 CREATE TABLE IF NOT EXISTS taobao_searches (
     task_id TEXT PRIMARY KEY REFERENCES ingestion_tasks(id),
     keyword TEXT NOT NULL,
+    tmall_only INTEGER NOT NULL DEFAULT 0,
     page INTEGER NOT NULL,
     page_size INTEGER NOT NULL,
     total_count INTEGER NOT NULL DEFAULT 0,

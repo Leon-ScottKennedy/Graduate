@@ -1,6 +1,7 @@
 import type { PartGroup, PartOption } from '../types/hardware'
 import { candidateOptions } from '../data/mock/candidateOptions'
 import { candidateFamilyById } from '../data/mock/candidateFamilies'
+import { browseHardware } from './hardwareBrowse'
 
 const text = (part: PartOption) => `${part.name} ${part.specs}`.toUpperCase()
 const capture = (value: string, pattern: RegExp) => value.match(pattern)?.[1]
@@ -40,7 +41,10 @@ function comparableSpecifications(
   return true
 }
 
-export function selectCandidates(group: PartGroup, selected: PartOption): PartOption[] {
+export function selectSpecificationCandidates(
+  group: PartGroup,
+  selected: PartOption,
+): PartOption[] {
   const target = candidateFamilyById[selected.id]
   if (!target || selected.price <= 0) return []
   const seen = new Set<string>()
@@ -61,4 +65,44 @@ export function selectCandidates(group: PartGroup, selected: PartOption): PartOp
       )
     })
     .sort((a, b) => Math.abs(a.price - selected.price) - Math.abs(b.price - selected.price))
+}
+
+export interface CandidateFilters {
+  priceRange?: number
+  brand?: string
+  query?: string
+}
+
+export function selectCandidates(
+  group: PartGroup,
+  selected: PartOption,
+  filters: CandidateFilters = {},
+): PartOption[] {
+  const identity = (name: string) => name.toUpperCase().replace(/\s+/g, '')
+  const query = filters.query?.trim().toLocaleLowerCase() ?? ''
+  return browseHardware(group)
+    .filter((option) => {
+      if (option.id === selected.id || identity(option.name) === identity(selected.name))
+        return false
+      if (filters.brand && filters.brand !== option.brand) return false
+      if (
+        query &&
+        !`${option.name} ${option.brand} ${option.specs}`.toLocaleLowerCase().includes(query)
+      )
+        return false
+      if (filters.priceRange !== undefined) {
+        if (selected.price <= 0 || option.price <= 0 || option.requiresQuote) return false
+        if (Math.abs(option.price / selected.price - 1) > filters.priceRange + 1e-9) return false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      const missingA = a.price <= 0 || !!a.requiresQuote
+      const missingB = b.price <= 0 || !!b.requiresQuote
+      if (missingA !== missingB) return Number(missingA) - Number(missingB)
+      return (
+        (missingA ? 0 : Math.abs(a.price - selected.price) - Math.abs(b.price - selected.price)) ||
+        a.name.localeCompare(b.name, 'zh-CN')
+      )
+    })
 }

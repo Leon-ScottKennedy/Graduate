@@ -79,7 +79,7 @@ class TaobaoClient:
         return bool(self.settings.taobao_app_key and self.settings.taobao_app_secret
                     and re.fullmatch(r'[1-9][0-9]{0,19}', self.settings.taobao_adzone_id))
 
-    def search(self, keyword, page=1, page_size=20):
+    def search(self, keyword, page=1, page_size=20, tmall_only=False):
         if not self.search_configured:
             raise TaobaoError('请在 server/.env 配置 TAOBAO_APP_KEY、TAOBAO_APP_SECRET 和 TAOBAO_ADZONE_ID（自己的推广位 PID 最后一段），然后重启后端')
         keyword = clean_text(keyword)
@@ -89,7 +89,14 @@ class TaobaoClient:
             raise ValueError('分页范围无效')
         params = dict(q=keyword, adzone_id=self.settings.taobao_adzone_id,
                       page_no=str(page), page_size=str(page_size), biz_scene_id='1')
-        payload = self.request(SEARCH_METHOD, params)
+        if tmall_only:
+            params['is_tmall'] = 'true'
+        try:
+            payload = self.request(SEARCH_METHOD, params)
+        except TaobaoError as error:
+            if error.code == '15' and error.sub_code == '50001':
+                return dict(items=[], total=0, payload=dict(no_results=True, request_id=error.request_id))
+            raise
         envelope = payload.get('tbk_dg_material_optional_upgrade_response')
         if not isinstance(envelope, dict):
             raise TaobaoError('淘宝搜索响应结构异常')

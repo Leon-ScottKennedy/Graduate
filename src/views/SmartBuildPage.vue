@@ -4,7 +4,7 @@ import BuildPartInspector from '../components/build/BuildPartInspector.vue'
 import BuildAssistant from '../components/build/BuildAssistant.vue'
 import { getBuildCatalog } from '../services/catalogService'
 import { selectBuild } from '../services/buildSelection'
-import { checkBuildCompatibility, checkReplacement } from '../services/buildCompatibility'
+import { checkReplacement } from '../services/buildCompatibility'
 import type { PartOption } from '../types/hardware'
 import { money } from '../utils/format'
 import '../assets/styles/build-workspace.css'
@@ -44,7 +44,6 @@ function allocationPercent(price: number) {
 }
 const remaining = computed(() => budget.value - total.value)
 const notice = ref('')
-const compatibility = computed(() => checkBuildCompatibility(chosen.value))
 let budgetTimer: ReturnType<typeof setTimeout> | undefined
 const requests = ['预算怎么分配？', '报价从哪里来？', '这套配置兼容吗？']
 
@@ -103,7 +102,7 @@ function replace(option: PartOption) {
     return
   }
   chosen.value = { ...chosen.value, [selectedGroup.value.id]: option }
-  notice.value = `已替换${selectedGroup.value.label}，${check.warnings.length} 项建议提醒，${check.pending.length} 项待核验`
+  notice.value = ''
 }
 </script>
 
@@ -272,24 +271,6 @@ function replace(option: PartOption) {
               ></span
             >
           </button>
-          <details class="nb-check-note nb-compatibility-summary">
-            <summary>
-              {{
-                compatibility.errors.length
-                  ? `${compatibility.errors.length} 项兼容冲突`
-                  : '基础检查无已知冲突'
-              }}
-              · {{ compatibility.warnings.length }} 项建议 ·
-              {{ compatibility.pending.length }} 项待核验
-            </summary>
-            <div class="nb-compatibility-items">
-              <p v-for="issue in compatibility.warnings" :key="issue.code">
-                建议：{{ issue.message }}
-              </p>
-              <p v-for="issue in compatibility.errors" :key="issue.code">{{ issue.message }}</p>
-              <p v-for="issue in compatibility.pending" :key="issue.code">{{ issue.message }}</p>
-            </div>
-          </details>
         </section>
         <p v-if="notice" class="nb-live-message" role="status" aria-live="polite">{{ notice }}</p>
         <BuildPartInspector

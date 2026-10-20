@@ -11,6 +11,7 @@ class Search(BaseModel):
     keyword: str = Field(min_length=2, max_length=120)
     page: int = Field(default=1, ge=1, le=100)
     pageSize: int = Field(default=20, ge=1, le=40)
+    tmallOnly: bool = False
 
     @field_validator('keyword')
     @classmethod
@@ -29,7 +30,7 @@ def status(request: Request):
 @router.post('/search')
 def search(body: Search, request: Request):
     try:
-        return request.app.state.taobao_search.search(body.keyword, body.page, body.pageSize)
+        return request.app.state.taobao_search.search(body.keyword, body.page, body.pageSize, body.tmallOnly)
     except TaobaoError as error:
         raise HTTPException(503, str(error)) from None
 

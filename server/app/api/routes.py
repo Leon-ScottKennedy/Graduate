@@ -6,6 +6,7 @@ from ..cleaning.jd_input import parse_sku_inputs
 from ..ingestion.jd_search import JDSearchService
 from ..ingestion.jd_pool import JDPoolService
 from ..ingestion.jd_comparison import JDComparisonService
+from ..ingestion.market_comparison import MarketComparisonService
 from ..cleaning.jd_categories import CATEGORIES
 
 router = APIRouter(prefix="/api")
@@ -77,6 +78,19 @@ class JDCompareRequest(BaseModel):
 
 class JDCompareHistoryRequest(JDCompareRequest):
     offerId: str = Field(min_length=1, max_length=100)
+
+
+class MarketCompareRequest(JDCompareRequest):
+    page: int = Field(default=1, ge=1, le=500)
+    platform: str = Field(default='all', pattern=r'^(all|jd|taobao)$')
+
+
+@router.post('/market/compare')
+def market_compare(body: MarketCompareRequest, request: Request):
+    if body.category not in CATEGORIES:
+        raise HTTPException(status_code=422, detail='未知的配件类别')
+    return MarketComparisonService(request.app.state.database).compare(
+        body.category, body.brand, body.modelName, body.specs, body.page, body.platform)
 
 
 @router.post('/jd/compare')

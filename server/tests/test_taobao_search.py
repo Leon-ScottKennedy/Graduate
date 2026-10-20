@@ -19,6 +19,38 @@ def goods(identifier='new-opaque_123', price='3599.00'):
 
 
 class TaobaoSearchTests(unittest.TestCase):
+    def test_existing_database_migration_preserves_saved_search(self):
+        database = self.client.app.state.database
+        with database.connect() as db:
+            db.execute("INSERT INTO ingestion_tasks VALUES('legacy','taobao','completed','2026-10-20',NULL)")
+            db.execute("INSERT INTO taobao_searches(task_id,keyword,page,page_size) VALUES('legacy','AMD 7700',1,20)")
+            db.execute('ALTER TABLE taobao_searches DROP COLUMN tmall_only')
+        database.initialize()
+        with database.connect() as db:
+            row = db.execute("SELECT keyword,tmall_only FROM taobao_searches WHERE task_id='legacy'").fetchone()
+            self.assertEqual(row['keyword'], 'AMD 7700')
+            self.assertEqual(row['tmall_only'], 0)
+
+    def test_tmall_scope_has_separate_cache(self):
+        service = self.mock([goods()])
+        data = service.search('RTX 4070', tmall_only=True)
+        self.assertIsNone(service.cached('RTX 4070'))
+        self.assertEqual(service.cached('RTX 4070', tmall_only=True)['taskId'], data['taskId'])
+
+    def test_platform_no_results_is_cached_success_not_failure_cooldown(self):
+        calls = []
+        def handler(request):
+            calls.append(request)
+            params = parse_qs(request.content.decode())
+            self.assertEqual(params['is_tmall'], ['true'])
+            return httpx.Response(200, json={'error_response': {'code': 15, 'sub_code': '50001', 'sub_msg': '无结果'}})
+        service = TaobaoSearchService(self.client.app.state.database, TaobaoClient(self.settings, httpx.MockTransport(handler)))
+        first = service.search('AMD 7700', tmall_only=True)
+        self.assertEqual(first['status'], 'completed')
+        self.assertEqual(first['products'], [])
+        self.assertEqual(service.search('AMD 7700', tmall_only=True)['taskId'], first['taskId'])
+        self.assertEqual(len(calls), 1)
+
     def test_full_pid_normalized_without_exposing_configuration(self):
         for value in ['mm_111_222_123456', '123456']:
             with patch.dict(os.environ, {'TAOBAO_ADZONE_ID': value}), patch('app.config.load_dotenv'):
@@ -110,8 +142,33 @@ class TaobaoSearchTests(unittest.TestCase):
         self.client.post('/api/taobao/search', json={'keyword': 'RTX 4070'})
         presale = {**goods(price='100'), 'presale_info': {'presale_deposit': '100'}}
         self.mock([presale])
+        self.client.app.state.taobao_search.CACHE_SECONDS = 0
+        self.client.app.state.taobao_search.MIN_INTERVAL_SECONDS = 0
         self.client.post('/api/taobao/search', json={'keyword': 'RTX 4070'})
         with self.client.app.state.database.connect() as db:
             rows = db.execute('SELECT price_cents FROM price_snapshots ORDER BY id DESC').fetchall()
             self.assertIsNone(rows[0][0])
             self.assertEqual(rows[1][0], 359900)
+
+    def test_cache_and_cross_instance_rate_limit(self):
+        service = self.mock([goods()])
+        first = service.search('RTX 4070')
+        other = TaobaoSearchService(service.database, service.client)
+        self.assertEqual(other.search('RTX 4070')['taskId'], first['taskId'])
+        with self.assertRaises(TaobaoError):
+            other.search('RTX 5070')
+
+    def test_failed_request_cools_down_and_daily_limit(self):
+        service = self.mock([goods()])
+        with patch.object(service.client, 'search', side_effect=TaobaoError('denied')) as remote:
+            with self.assertRaises(TaobaoError):
+                service.search('RTX 4070')
+            with self.assertRaises(TaobaoError):
+                TaobaoSearchService(service.database, service.client).search('RTX 5070')
+            self.assertEqual(remote.call_count, 1)
+        service.FAILURE_COOLDOWN_SECONDS = 0
+        service.DAILY_LIMIT = 1
+        with patch.object(service.client, 'search') as remote:
+            with self.assertRaises(TaobaoError):
+                service.search('RTX 5070')
+            remote.assert_not_called()

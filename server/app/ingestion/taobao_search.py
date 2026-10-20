@@ -4,7 +4,7 @@ import json
 import re
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from urllib.parse import urlsplit
 from ..cleaning.jd_goods import clean_text
 from ..integrations.taobao import IDENTIFIER, TaobaoError, money
@@ -56,23 +56,43 @@ def clean_search_item(item):
 
 
 class TaobaoSearchService:
+    CACHE_SECONDS = 900
+    MIN_INTERVAL_SECONDS = 10
+    FAILURE_COOLDOWN_SECONDS = 60
+    DAILY_LIMIT = 100
+
     def __init__(self, database, client):
         self.database = database
         self.client = client
         self.lock = threading.Lock()
 
-    def search(self, keyword, page=1, page_size=20):
+    def search(self, keyword, page=1, page_size=20, tmall_only=False):
         keyword = clean_text(keyword)
         if not self.lock.acquire(blocking=False):
             raise TaobaoError('淘宝搜索任务正在进行，请稍后再试')
         task = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         try:
+            cached = self.cached(keyword, page, page_size, tmall_only)
+            if cached and (datetime.fromisoformat(now) - datetime.fromisoformat(cached['collectedAt'])).total_seconds() < self.CACHE_SECONDS:
+                return cached
             with self.database.connect() as db:
+                # Serialize admission across backend processes sharing this database.
+                db.execute('BEGIN IMMEDIATE')
+                latest = db.execute("SELECT status,started_at,finished_at FROM ingestion_tasks WHERE platform='taobao' ORDER BY started_at DESC LIMIT 1").fetchone()
+                if latest:
+                    elapsed = (datetime.fromisoformat(now) - datetime.fromisoformat(latest['finished_at'] or latest['started_at'])).total_seconds()
+                    cooldown = self.FAILURE_COOLDOWN_SECONDS if latest['status'] == 'failed' else self.MIN_INTERVAL_SECONDS
+                    if elapsed < cooldown or (latest['status'] == 'running' and elapsed < 120):
+                        raise TaobaoError('淘宝查询冷却中，请稍后再试；失败后至少等待 60 秒')
+                since = (datetime.fromisoformat(now) - timedelta(days=1)).isoformat()
+                count = db.execute("SELECT COUNT(*) FROM ingestion_tasks WHERE platform='taobao' AND started_at>=?", (since,)).fetchone()[0]
+                if count >= self.DAILY_LIMIT:
+                    raise TaobaoError('已达到本地淘宝查询上限（24 小时 100 次），请使用缓存')
                 db.execute('INSERT INTO ingestion_tasks(id,platform,status,started_at) VALUES(?,?,?,?)', (task, 'taobao', 'running', now))
-                db.execute('INSERT INTO taobao_searches(task_id,keyword,page,page_size) VALUES(?,?,?,?)', (task, keyword, page, page_size))
+                db.execute('INSERT INTO taobao_searches(task_id,keyword,page,page_size,tmall_only) VALUES(?,?,?,?,?)', (task, keyword, page, page_size, int(tmall_only)))
             try:
-                result = self.client.search(keyword, page, page_size)
+                result = self.client.search(keyword, page, page_size, tmall_only=True) if tmall_only else self.client.search(keyword, page, page_size)
                 seen = set()
                 valid = excluded = 0
                 with self.database.connect() as db:
@@ -112,9 +132,9 @@ class TaobaoSearchService:
         finally:
             self.lock.release()
 
-    def cached(self, keyword, page=1, page_size=20):
+    def cached(self, keyword, page=1, page_size=20, tmall_only=False):
         with self.database.connect() as db:
-            row = db.execute('SELECT s.task_id FROM taobao_searches s JOIN ingestion_tasks t ON t.id=s.task_id WHERE keyword=? AND page=? AND page_size=? AND status=? ORDER BY started_at DESC,t.id DESC LIMIT 1', (keyword, page, page_size, 'completed')).fetchone()
+            row = db.execute('SELECT s.task_id FROM taobao_searches s JOIN ingestion_tasks t ON t.id=s.task_id WHERE keyword=? AND page=? AND page_size=? AND tmall_only=? AND status=? ORDER BY started_at DESC,t.id DESC LIMIT 1', (keyword, page, page_size, int(tmall_only), 'completed')).fetchone()
         return self.get(row['task_id']) if row else None
 
     def get(self, task):

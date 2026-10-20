@@ -48,6 +48,7 @@ __screenshots__/
 **/__pycache__/
 *.pyc
 /server/storage/
+/backups/
 
 # Downloaded vendor SDK archives (keep local copies)
 /jd-api-sdk-*.zip
