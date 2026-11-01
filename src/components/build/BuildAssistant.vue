@@ -39,7 +39,7 @@ async function ask(question: string, retry = false) {
   const facts = Object.fromEntries([
     ...Object.entries(props.build).flatMap(([category, option]) =>
       Object.entries(option)
-        .filter(([key, value]) => key !== 'id' && value !== undefined)
+        .filter(([key, value]) => !['id', 'marketOffer', 'observedMarketOffer', 'referencePrice'].includes(key) && value !== undefined)
         .map(([key, value]) => [
           `build.${category}.${key}`,
           typeof value === 'string'
@@ -61,7 +61,7 @@ async function ask(question: string, retry = false) {
     ['context.usage', props.usage],
     [
       'context.priceBasis',
-      '未标 priceSource 的配件是预设参考价；标记 priceSource 的配件采用用户确认的人工店铺报价（含运费），时间见 observedAt，均不是实时价格。',
+      'tag标明公开参考、海外参考或估算参考的价格不是店铺报价；估算包含同系列/容量换算等低置信度值。已采集商品展示价不含运费或资格优惠；priceSource为人工报价；其余为预设参考价。均非实时成交价。',
     ],
   ])
   void scroll()
@@ -111,23 +111,15 @@ const open = ref(false)
 const draft = ref('')
 const launcher = ref<HTMLButtonElement | null>(null)
 const input = ref<HTMLInputElement | null>(null)
-const hintVisible = ref(false)
 const position = ref({ x: 80, y: 150 })
-const size = ref({ width: 340, height: 420 })
-let resizing: { id: number; x: number; y: number; width: number; height: number } | undefined
+const size = ref({ width: 480, height: 540 })
 const bounds = ref({ top: 80, bottom: 700 })
-const ballTop = ref(120)
 let drag: { id: number; x: number; y: number; left: number; top: number } | undefined
 function constrain() {
-  const main = document.querySelector('.app_main')?.getBoundingClientRect()
   const nav = document.querySelector('.nav_top')?.getBoundingClientRect()
-  const top = Math.max(8, main?.top ?? 0, nav?.bottom ?? 0)
-  const bottom = Math.max(
-    top,
-    Math.min(window.innerHeight - 8, main?.bottom ?? window.innerHeight - 8),
-  )
+  const top = Math.min(Math.max(16, nav?.bottom ?? 0), 80)
+  const bottom = Math.max(top, window.innerHeight - 24)
   bounds.value = { top, bottom }
-  ballTop.value = Math.max(top, Math.min(top + 12, bottom - 44))
   const width = Math.min(size.value.width, window.innerWidth - 32)
   const height = Math.min(size.value.height, bottom - top)
   size.value = { width, height }
@@ -155,72 +147,27 @@ function moveDrag(event: PointerEvent) {
 function endDrag() {
   drag = undefined
 }
-function startResize(event: PointerEvent) {
-  if (event.button !== 0) return
-  resizing = { id: event.pointerId, x: event.clientX, y: event.clientY, ...size.value }
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-  event.preventDefault()
-}
-function resizeBy(width: number, height: number) {
-  size.value = {
-    width: Math.min(Math.max(280, width), window.innerWidth - position.value.x - 16),
-    height: Math.min(Math.max(280, height), bounds.value.bottom - position.value.y),
-  }
-}
-function moveResize(event: PointerEvent) {
-  if (!resizing || resizing.id !== event.pointerId) return
-  resizeBy(
-    resizing.width + event.clientX - resizing.x,
-    resizing.height + event.clientY - resizing.y,
-  )
-}
-function endResize() {
-  resizing = undefined
-}
-function keyboardResize(event: KeyboardEvent) {
-  const changes: Record<string, [number, number]> = {
-    ArrowRight: [20, 0],
-    ArrowLeft: [-20, 0],
-    ArrowDown: [0, 20],
-    ArrowUp: [0, -20],
-  }
-  const change = changes[event.key]
-  if (!change) return
-  event.preventDefault()
-  resizeBy(size.value.width + change[0], size.value.height + change[1])
-}
-let hintTimer: ReturnType<typeof setTimeout> | undefined
-let reminderTimer: ReturnType<typeof setInterval> | undefined
-
-function showHint() {
-  if (open.value || document.hidden) return
-  hintVisible.value = true
-  clearTimeout(hintTimer)
-  hintTimer = setTimeout(() => {
-    hintVisible.value = false
-  }, 5000)
-}
 onMounted(() => {
   constrain()
   window.addEventListener('resize', constrain)
   window.addEventListener('scroll', constrain, true)
-  showHint()
-  reminderTimer = setInterval(showHint, 60000)
 })
 onUnmounted(() => {
   window.removeEventListener('resize', constrain)
   window.removeEventListener('scroll', constrain, true)
   controller?.abort()
-  clearTimeout(hintTimer)
-  clearInterval(reminderTimer)
 })
 
 async function toggle() {
   open.value = !open.value
-  hintVisible.value = false
-  clearTimeout(hintTimer)
   await nextTick()
   constrain()
+  if (open.value) {
+    position.value = {
+      x: Math.max(16, (window.innerWidth - size.value.width) / 2),
+      y: Math.max(bounds.value.top, bounds.value.top + (bounds.value.bottom - bounds.value.top - size.value.height) / 2),
+    }
+  }
   if (open.value) input.value?.focus()
   else launcher.value?.focus()
 }
@@ -229,22 +176,27 @@ function send() {
   if (!question) return
   void ask(question)
 }
+defineExpose({
+  isOpen: open,
+  show: () => {
+    if (!open.value) {
+      launcher.value = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null
+      void toggle()
+    } else input.value?.focus()
+  },
+})
 </script>
 
 <template>
+  <Teleport to="body">
   <div
     class="nb-floating-assistant"
     :class="{ 'is-open': open }"
     :style="{
-      top: `${ballTop}px`,
       visibility: bounds.bottom - bounds.top < 80 ? 'hidden' : undefined,
     }"
   >
-    <Transition name="assistant-hint">
-      <button v-if="hintVisible && !open" class="nb-assistant-hint" type="button" @click="toggle">
-        有装机问题？问问助手 <span aria-hidden="true">→</span>
-      </button>
-    </Transition>
+    <Transition name="assistant-panel">
     <section
       v-if="open"
       id="build-chat"
@@ -268,18 +220,18 @@ function send() {
         @pointercancel="endDrag"
         @lostpointercapture="endDrag"
       >
-        <h2 id="build-chat-title">装机助手</h2>
+        <div class="nb-chat-heading"><h2 id="build-chat-title"><span aria-hidden="true">▪</span> 装机助手</h2><span>结合当前配置，为你解答</span></div>
         <button type="button" class="nb-chat-close" aria-label="关闭装机助手" @click="toggle">
           ×
         </button>
       </header>
       <div ref="body" class="nb-chat-body" aria-live="polite" :aria-busy="busy">
-        <p v-if="!messages.length" class="nb-chat-placeholder">结合当前配置，有什么装机问题？</p>
         <div
           v-for="(message, index) in messages"
           :key="index"
           :class="message.role === 'user' ? 'nb-chat-question' : 'nb-chat-answer'"
         >
+          <span v-if="message.role === 'assistant'" class="nb-message-label">装机助手</span>
           <p>{{ message.content }}</p>
           <div v-if="message.sources?.length" class="nb-chat-sources">
             <span>参考来源</span>
@@ -299,7 +251,7 @@ function send() {
           {{ error }} <button type="button" @click="retry">重试</button>
         </p>
       </div>
-      <div class="nb-chat-suggestions">
+      <div v-if="!messages.length" class="nb-chat-suggestions">
         <button
           v-for="item in questions"
           :key="item"
@@ -320,44 +272,10 @@ function send() {
         />
         <button type="submit" :disabled="busy || !draft.trim()" aria-label="发送问题">↑</button>
       </form>
-      <button
-        class="nb-chat-resize"
-        type="button"
-        aria-label="调整对话框大小，拖动或使用方向键"
-        title="拖动调整大小"
-        @pointerdown="startResize"
-        @pointermove="moveResize"
-        @pointerup="endResize"
-        @pointercancel="endResize"
-        @lostpointercapture="endResize"
-        @keydown="keyboardResize"
-      >
-        <span aria-hidden="true">◢</span>
-      </button>
     </section>
-    <button
-      ref="launcher"
-      class="nb-assistant-ball"
-      type="button"
-      :aria-label="open ? '收起装机助手' : '打开装机助手'"
-      :aria-expanded="open"
-      aria-controls="build-chat"
-      aria-haspopup="dialog"
-      title="装机助手"
-      @click="toggle"
-    >
-      <svg v-if="!open" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M5 5h14v11H9l-4 3V5Z"
-          stroke="currentColor"
-          stroke-width="1.7"
-          stroke-linejoin="round"
-        />
-        <path d="M9 9h6M9 12h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-      </svg>
-      <span v-else aria-hidden="true">×</span>
-    </button>
+    </Transition>
   </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -365,89 +283,33 @@ function send() {
   --assistant-right: max(18px, env(safe-area-inset-right));
   --assistant-bottom: max(18px, env(safe-area-inset-bottom));
   position: fixed;
-  left: max(18px, env(safe-area-inset-left));
+  right: var(--assistant-right);
+  bottom: var(--assistant-bottom);
   z-index: 100;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 14px;
 }
-.nb-assistant-hint {
-  position: absolute;
-  left: 58px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: max-content;
-  max-width: calc(100vw - 110px);
-  padding: 11px 14px;
-  border: 1px solid #665074;
-  border-radius: 8px;
-  background: #2a2233;
-  color: #e2d2f1;
-  box-shadow: 0 5px 20px #0004;
-  font-size: 12px;
-  line-height: 1.6;
-  text-align: left;
-}
-.nb-assistant-hint::before {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  left: -5px;
-  top: calc(50% - 4px);
-  background: #2a2233;
-  border-left: 1px solid #665074;
-  border-bottom: 1px solid #665074;
-  transform: rotate(45deg);
-}
-.assistant-hint-enter-active,
-.assistant-hint-leave-active {
-  transition: opacity 0.2s;
-}
-.assistant-hint-enter-from,
-.assistant-hint-leave-to {
-  opacity: 0;
-}
-.nb-assistant-ball {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid #b49dd9;
-  background: linear-gradient(145deg, #8b6abb, #5b437e);
-  color: #fff;
-  box-shadow: 0 5px 22px #0005;
-  transition:
-    background 0.2s,
-    box-shadow 0.2s;
-}
-.nb-assistant-ball:hover {
-  background: #8b6abb;
-  box-shadow: 0 5px 24px #8360b744;
-}
-.nb-assistant-ball svg {
-  width: 25px;
-  height: 25px;
-}
-.nb-assistant-ball span {
-  font-size: 27px;
-  line-height: 1;
-}
 .nb-chat {
+  --chat-edge: light-dark(#8b95a4, #909090);
+  --chat-surface: light-dark(#ffffff, #101010);
+  --chat-cut: polygon(0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px));
   position: fixed;
+  isolation: isolate;
   width: min(340px, calc(100vw - 32px));
   height: min(420px, 65dvh);
   display: flex;
   flex-direction: column;
-  background: #1c1a24;
-  border: 1px solid #61516f;
-  border-radius: 12px;
-  box-shadow: 0 16px 60px #0007;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   overflow: hidden;
 }
+.nb-chat::before, .nb-chat::after { content: ''; position: absolute; pointer-events: none; clip-path: var(--chat-cut); }
+.nb-chat::before { inset: 0; z-index: -2; background: var(--chat-edge); }
+.nb-chat::after { inset: 2px; z-index: -1; background: var(--chat-surface); }
+.nb-chat-header { margin: 2px 8px 0; background: light-dark(#f3f5f8, #171717); }
 .nb-chat-header {
   cursor: grab;
   touch-action: none;
@@ -457,7 +319,7 @@ function send() {
   align-items: center;
   gap: 10px;
   padding: 16px 18px;
-  border-bottom: 1px solid #383140;
+  border-bottom: 1px solid light-dark(#d8dee7, #303030);
 }
 .nb-chat-header:active {
   cursor: grabbing;
@@ -466,21 +328,26 @@ function send() {
   flex: 1;
   font-size: 14px;
   font-weight: 600;
+  margin: 0;
+  color: light-dark(#263241, #eeeeee);
 }
+.nb-chat-heading { flex: 1; display: grid; gap: 5px; }
+.nb-chat-heading > span { color: light-dark(#64748b, #888888); font-size: 11px; }
+.nb-chat-header h2 span { margin-right: 5px; }
 .nb-chat-close {
   display: grid;
   place-items: center;
-  border: 0;
-  background: transparent;
-  color: #bdb1cb;
+  border: 2px solid light-dark(#a2adbb, #555555);
+  background: light-dark(#ffffff, #111111);
+  color: light-dark(#475569, #cccccc);
   width: 28px;
   height: 28px;
   font-size: 23px;
 }
 .nb-chat-close:hover {
   color: white;
-  background: #34283f;
-  border-radius: 4px;
+  background: #2c2c2c;
+  border-radius: 0;
 }
 .nb-chat-body {
   flex: 1;
@@ -491,37 +358,56 @@ function send() {
   font-size: 12px;
   line-height: 1.9;
 }
-.nb-chat-placeholder {
-  color: #a59ab2;
-}
+.nb-chat-question p, .nb-chat-answer p { margin: 0; }
+.nb-chat button { cursor: pointer; }
+.nb-chat button:disabled { opacity: .45; cursor: default; }
+.nb-chat :is(button, input):focus-visible { outline: 2px solid light-dark(#64748b, #aaaaaa); outline-offset: 2px; }
+.assistant-panel-enter-active, .assistant-panel-leave-active { transition: opacity .2s ease, transform .2s ease; }
+.assistant-panel-enter-from, .assistant-panel-leave-to { opacity: 0; transform: translateY(14px) scale(.97); }
+@media (prefers-reduced-motion: reduce) { .assistant-panel-enter-active, .assistant-panel-leave-active { transition: none; } }
 .nb-chat-question {
-  padding: 9px 12px;
-  margin-left: 30px;
-  margin-bottom: 14px;
-  background: #4b365e;
-  color: #ede2f9;
-  border-radius: 9px 9px 2px 9px;
+  position: relative;
+  isolation: isolate;
+  padding: 12px 16px;
+  margin: 0 0 20px auto;
+  width: fit-content;
+  max-width: 82%;
+  box-sizing: border-box;
+  background: transparent;
+  color: light-dark(#253040, #e6e6e6);
+  border-radius: 0;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.nb-chat-question::before, .nb-chat-question::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  clip-path: var(--chat-cut);
+}
+.nb-chat-question::before { inset: 0; z-index: -2; background: light-dark(#9aa7b8, #737373); }
+.nb-chat-question::after { inset: 2px; z-index: -1; background: light-dark(#e8edf3, #292929); }
 .nb-chat-answer {
   white-space: pre-line;
-  margin-bottom: 14px;
-  color: #d2c7de;
-  background: #28232f;
-  padding: 11px 12px;
-  border-radius: 2px 9px 9px;
+  margin: 0 12px 24px 0;
+  color: light-dark(#374151, #cbcbcb);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
   overflow-wrap: anywhere;
 }
+.nb-message-label { display: block; margin-bottom: 6px; color: light-dark(#64748b, #999999); font-size: 10px; line-height: 1.5; font-weight: 600; }
+.nb-chat-answer > .nb-message-label { margin-bottom: 10px; color: light-dark(#475569, #bbbbbb); }
 .nb-chat-sources {
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px solid #51405e;
+  border-top: 1px solid #464646;
   font-size: 11px;
   white-space: normal;
 }
 .nb-chat-sources a {
   display: block;
-  color: #cbb6ec;
+  color: light-dark(#52647b, #bebebe);
   margin-top: 5px;
 }
 .nb-chat-suggestions {
@@ -532,60 +418,45 @@ function send() {
   padding: 0 18px 15px;
 }
 .nb-chat-suggestions button {
-  border: 1px solid #51405e;
-  border-radius: 5px;
+  border: 2px solid light-dark(#c0c8d3, #464646);
+  border-radius: 0;
   padding: 6px 9px;
-  font-size: 10px;
-  background: #29212f;
-  color: #cbb6dc;
+  font-size: 11px;
+  background: light-dark(#f5f6f8, #181818);
+  color: light-dark(#4b5563, #bdbdbd);
 }
 .nb-chat-suggestions button:hover {
-  background: #40304e;
+  background: light-dark(#e6ebf1, #363636);
 }
 .nb-chat-form {
   flex-shrink: 0;
   display: flex;
   gap: 10px;
   align-items: center;
-  border-top: 1px solid #383140;
-  padding: 13px 24px 13px 16px;
+  border-top: 1px solid light-dark(#d8dee7, #303030);
+  padding: 13px 16px;
 }
-.nb-chat-resize {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 22px;
-  height: 22px;
-  border: 0;
-  background: transparent;
-  color: #a68abe;
-  cursor: nwse-resize;
-  touch-action: none;
-  font-size: 14px;
-}
+
 .nb-chat-form input {
   width: 100%;
   min-width: 0;
-  padding: 8px 0;
-  border: 0;
-  background: transparent;
-  color: #eee6f6;
+  padding: 10px 12px;
+  border: 2px solid light-dark(#aab4c2, #555555);
+  border-radius: 0;
+  background: light-dark(#f5f6f8, #0b0b0b);
+  color: light-dark(#263241, #e9e9e9);
   font-size: 12px;
 }
 .nb-chat-form button {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  background: #735395;
-  color: #fff;
+  width: 38px;
+  height: 38px;
+  background: light-dark(#303946, #dddddd);
+  color: light-dark(#ffffff, #111111);
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 18px;
 }
-@media (prefers-reduced-motion: reduce) {
-  .assistant-hint-enter-active,
-  .assistant-hint-leave-active {
-    transition: none;
-  }
-}
+.nb-chat-suggestions button:not(:disabled):active, .nb-chat-form button:not(:disabled):active, .nb-chat-close:active { opacity: .8; }
+.nb-chat-body { scrollbar-width: thin; scrollbar-color: light-dark(#9ba5b4, #626262) transparent; }
 </style>

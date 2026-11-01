@@ -1,5 +1,4 @@
 import hashlib
-import json
 import unittest
 from pathlib import Path
 from urllib.parse import parse_qs

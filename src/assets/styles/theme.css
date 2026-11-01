@@ -1,0 +1,262 @@
+/* The PostCSS palette pairs all existing authored colors without changing dark mode. */
+:root[data-theme='dark'] { color-scheme: dark; }
+:root[data-theme='light'] { color-scheme: light; }
+html[data-theme='light'] .nb-workspace {
+  --control-accent: #d3d6db;
+  --control-accent-hover: #c4c9d0;
+}
+html, body { background-color: light-dark(#f7f8fa, #090909); }
+html[data-theme='light'] .home_story .hero_preview_dot {
+  background: #7bbce8;
+}
+html[data-theme='light'] .navigation-panel .brand-mark {
+  background: #8975ef;
+  color: #ffffff;
+}
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { z-index: 2; }
+::view-transition-old(root) { z-index: 1; }
+html[data-theme='light'] .comparison-modes button {
+  background: #ffffff;
+  border-color: #cbd0d6;
+  color: #454b54;
+}
+html[data-theme='light'] :is(.nb-choice-grid, .nb-choice-stack) button.active {
+  background: var(--control-accent);
+  border-color: var(--control-accent);
+  color: #303640;
+  font-weight: 600;
+}
+html[data-theme='light'] :is(.nb-choice-grid, .nb-choice-stack) button.active:hover {
+  background: var(--control-accent-hover);
+  border-color: var(--control-accent-hover);
+}
+html[data-theme='light'] .nb-budget-state,
+html[data-theme='light'] .price-difference.is-lower {
+  color: #24815c;
+}
+html[data-theme='light'] .nb-drop-preview { color: #24815c; }
+html[data-theme='light'] .nb-drop-preview.over { color: #e23c47; }
+html[data-theme='light'] .nb-inspector .candidate-row {
+  background: #ffffff;
+  border-color: #cbd3de;
+}
+html[data-theme='light'] .nb-inspector .candidate-row.is-draggable:hover {
+  border-color: #8b99ab;
+}
+html[data-theme='light'] .nb-result .nb-part-row {
+  background: #ffffff;
+  border-color: #cbd3de;
+}
+html[data-theme='light'] .nb-result .nb-part-row:hover {
+  background: #f4f6f9;
+  border-color: #8b99ab;
+}
+html[data-theme='light'] .nb-result .nb-part-row.active {
+  background: #edf0f4;
+  border-color: #8b99ab;
+  box-shadow: inset 3px 0 0 #8b99ab;
+}
+html[data-theme='light'] .nb-result .nb-part-row.is-drop-target {
+  background: #eaf1f7;
+  border-color: #7b8d9e;
+  box-shadow: inset 0 0 0 1px #7b8d9e;
+}
+html[data-theme='light'] .nb-result .nb-part-row.is-drop-over {
+  background: #dce8f2;
+  box-shadow: inset 0 0 0 2px #6e8ba5;
+}
+html[data-theme='light'] .nb-budget-state.over,
+html[data-theme='light'] .nb-total-row .nb-budget-state.over > span,
+html[data-theme='light'] .price-difference.is-higher {
+  color: #e23c47;
+}
+html[data-theme='light'] .comparison-modes button:hover {
+  background: #eceef1;
+  border-color: #9ca3ad;
+  color: #303640;
+}
+html[data-theme='light'] .comparison-modes button[aria-pressed='true'] {
+  background: var(--control-accent);
+  border-color: var(--control-accent);
+  color: #303640;
+  box-shadow: none;
+}
+html[data-theme='light'] .comparison-modes button[aria-pressed='true']:hover {
+  background: var(--control-accent-hover);
+  border-color: var(--control-accent-hover);
+  color: #303640;
+}
+html[data-theme='dark'] .comparison-modes button[aria-pressed='true'] {
+  background: #383838;
+  border-color: #707070;
+  color: #ffffff;
+  box-shadow: none;
+}
+html[data-theme='dark'] .comparison-modes button[aria-pressed='true']:hover {
+  background: #424242;
+  border-color: #808080;
+  color: #ffffff;
+}
+html[data-theme='dark'] :is(.nb-choice-grid, .nb-choice-stack) button.active {
+  background: #383838;
+  border-color: #707070;
+  color: #ffffff;
+  font-weight: 600;
+}
+html[data-theme='dark'] :is(.nb-choice-grid, .nb-choice-stack) button.active:hover {
+  background: #424242;
+  border-color: #808080;
+}
+html[data-theme='dark'] .demand-optimizer input[type='range'] {
+  background: linear-gradient(to right, #787878 0%, #787878 var(--fill), #252525 var(--fill), #252525 100%);
+}
+html[data-theme='dark'] .demand-optimizer input[type='range']::-webkit-slider-thumb {
+  background: #cccccc;
+  border-color: #151515;
+  box-shadow: 0 0 0 1px #787878;
+}
+html[data-theme='dark'] .demand-optimizer input[type='range']::-moz-range-thumb {
+  background: #cccccc;
+  border-color: #151515;
+  box-shadow: 0 0 0 1px #787878;
+}
+html[data-theme='dark'] .demand-optimizer .analysis-action button {
+  background: transparent;
+  border-color: #444444;
+  color: #dddddd;
+}
+html[data-theme='dark'] .demand-optimizer .analysis-action button:hover {
+  background: transparent;
+  border-color: #777777;
+  color: #ffffff;
+}
+html[data-theme='light'] .nb-part-icon {
+  background: color-mix(in srgb, var(--part-color) 22%, #ffffff);
+  color: color-mix(in srgb, var(--part-color) 35%, #192b40);
+  border-color: color-mix(in srgb, var(--part-color) 65%, #64748b);
+  font-weight: 700;
+}
+html[data-theme='light'] .demand-optimizer input[type='range'] {
+  appearance: none;
+  height: 8px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--control-accent) 0%, var(--control-accent) var(--fill), #ffffff var(--fill), #ffffff 100%);
+  cursor: pointer;
+}
+html[data-theme='light'] .demand-optimizer input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--control-accent);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: none;
+}
+html[data-theme='light'] .demand-optimizer input[type='range']::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--control-accent);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: none;
+}
+html[data-theme='light'] .demand-optimizer input[type='range']::-moz-range-track {
+  background: transparent;
+}
+html[data-theme='light'] .nb-allocation button,
+html[data-theme='light'] .nb-allocation-value i {
+  background: color-mix(in srgb, var(--part-color) 65%, #344960);
+}
+html[data-theme='light'] .nb-allocation button.active {
+  background: var(--part-color);
+  box-shadow: none;
+  opacity: 1;
+}
+html[data-theme='light'] .nb-allocation button.dimmed {
+  opacity: .7;
+}
+html[data-theme='light'] .nb-workspace .nb-allocation button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -4px;
+}
+html[data-theme='light'] .nb-inspector :is(.nb-tab-content, .status-content) {
+  scrollbar-color: #a3afbd #edf0f4;
+}
+html[data-theme='light'] .nb-inspector ::-webkit-scrollbar-track,
+html[data-theme='light'] .nb-inspector ::-webkit-scrollbar-corner {
+  background: #edf0f4;
+}
+html[data-theme='light'] .nb-inspector ::-webkit-scrollbar-thumb {
+  background: #a3afbd;
+  border-color: #edf0f4;
+}
+html[data-theme='light'] .nb-inspector ::-webkit-scrollbar-thumb:hover {
+  background: #7e8d9f;
+}
+@media (forced-colors: active) {
+  html[data-theme='light'] .nb-inspector :is(.nb-tab-content, .status-content) {
+    scrollbar-color: auto;
+  }
+}
+/* Match border geometry in both themes while retaining separate palettes. */
+html[data-theme] .home_story .hero .hero_preview {
+  padding: 2px;
+  outline: 1px solid transparent;
+  backface-visibility: hidden;
+}
+html[data-theme='light'] .home_story .hero .hero_preview {
+  background: linear-gradient(var(--cta-border-angle),
+    #d4dce6 0%, #d4dce6 20%, #8799af 34%, #3f546d 44%,
+    #8799af 54%, #d4dce6 68%, #d4dce6 100%);
+}
+html[data-theme] .home_story .hero .hero_preview::before {
+  inset: 2px;
+  border-radius: 2px;
+}
+html[data-theme='dark'] .home_story .hero .hero_preview {
+  box-shadow: 6px 6px 0 #1c1d20;
+  background: linear-gradient(var(--cta-border-angle),
+    #1a1a1a 0%, #171717 20%, #303030 34%, #555555 44%,
+    #393939 54%, #1a1a1a 68%, #1a1a1a 100%);
+}
+
+/* A visible solid backing gives dark cards the same offset-paper depth. */
+html[data-theme='dark'] .home_story .home_feature :is(.home_scene_row, .overview_compare, .overview_chat, .home_step_list li) {
+  box-shadow: inset 0 1px 0 #ffffff10, 6px 6px 0 #1c1d20;
+}
+html[data-theme='dark'] .home_story .home_feature a.home_scene_row:hover {
+  box-shadow: inset 0 1px 0 #ffffff18, 8px 8px 0 #222428;
+}
+html[data-theme='light'] .home_story .home_feature :is(.home_scene_row, .overview_compare, .overview_chat, .home_step_list li) {
+  box-shadow: inset 0 1px 0 #ffffff, 6px 6px 0 #b2bac5;
+}
+html[data-theme='light'] .home_story .home_feature a.home_scene_row:hover {
+  box-shadow: inset 0 1px 0 #ffffff, 8px 8px 0 #9faab8;
+}
+
+/* Anchor dots to the whole row so opaque cards cannot hide most of the field. */
+html[data-theme='light'] .home_feature:is([aria-labelledby='compare-title'], [aria-labelledby='chat-title'], [aria-labelledby='steps-title'])::before {
+  content: '';
+  inset: 0 -80px;
+  width: auto;
+  transform: none;
+  background: radial-gradient(circle, rgb(89 110 132 / .42) 1.2px, transparent 1.5px) 0 0 / 18px 18px;
+  filter: none;
+  mask-image: radial-gradient(ellipse 65% 46% at 70% 50%, #000 30%, transparent 100%);
+}
+html[data-theme='light'] .home_feature[aria-labelledby='chat-title']::before {
+  mask-image: radial-gradient(ellipse 65% 46% at 30% 50%, #000 30%, transparent 100%);
+}
+html[data-theme='light'] .home_feature:is([aria-labelledby='compare-title'], [aria-labelledby='steps-title']) > .home_feature_visual::before {
+  content: none;
+}
+@media (max-width: 700px) {
+  html[data-theme='light'] .home_feature:is([aria-labelledby='compare-title'], [aria-labelledby='chat-title'], [aria-labelledby='steps-title'])::before {
+    inset: 0 -24px;
+    mask-image: radial-gradient(ellipse 85% 55% at 50% 35%, #000 25%, transparent 100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(root) { animation-duration: 0s; } }

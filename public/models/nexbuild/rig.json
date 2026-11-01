@@ -1,0 +1,1044 @@
+{
+  "version": 2,
+  "source": "approved v8 outside-memory-routing.blend",
+  "groups": [
+    {
+      "name": "HW_fascia",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0.145,
+        0,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.13,
+        0.7
+      ]
+    },
+    {
+      "name": "HW_case_fan_1",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0.055,
+        0,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.4,
+        0.59
+      ]
+    },
+    {
+      "name": "HW_case_fan_2",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0.055,
+        0,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.4,
+        0.59
+      ]
+    },
+    {
+      "name": "HW_frame",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "HW_psu",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.22
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.74,
+        0.98
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0.028,
+            0,
+            0
+          ],
+          "interval": [
+            0.62,
+            0.7
+          ]
+        },
+        {
+          "delta": [
+            0,
+            0.03,
+            0
+          ],
+          "interval": [
+            0.7,
+            0.74
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_cpu",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.025
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.86,
+        1
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0.024,
+            0,
+            0
+          ],
+          "interval": [
+            0.5,
+            0.6
+          ]
+        },
+        {
+          "delta": [
+            0,
+            0,
+            0.08
+          ],
+          "interval": [
+            0.62,
+            0.86
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_case_fan_3",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0.001,
+        0,
+        0.14
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.4,
+        0.59
+      ]
+    },
+    {
+      "name": "HW_ram_3",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.106
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.915,
+        0.994
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0.024,
+            0,
+            0
+          ],
+          "interval": [
+            0.5,
+            0.6
+          ]
+        },
+        {
+          "delta": [
+            0,
+            0,
+            0.08
+          ],
+          "interval": [
+            0.62,
+            0.86
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_ram_2",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.096
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.89,
+        0.976
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0.024,
+            0,
+            0
+          ],
+          "interval": [
+            0.5,
+            0.6
+          ]
+        },
+        {
+          "delta": [
+            0,
+            0,
+            0.08
+          ],
+          "interval": [
+            0.62,
+            0.86
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_ram_1",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.086
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.865,
+        0.958
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0.024,
+            0,
+            0
+          ],
+          "interval": [
+            0.5,
+            0.6
+          ]
+        },
+        {
+          "delta": [
+            0,
+            0,
+            0.08
+          ],
+          "interval": [
+            0.62,
+            0.86
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_ram_0",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.076
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.84,
+        0.94
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0.024,
+            0,
+            0
+          ],
+          "interval": [
+            0.5,
+            0.6
+          ]
+        },
+        {
+          "delta": [
+            0,
+            0,
+            0.08
+          ],
+          "interval": [
+            0.62,
+            0.86
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_gpu",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0.03500000014901161,
+        -0.05238916352391243,
+        0.17803794145584106
+      ],
+      "quaternion": [
+        -0.5591928958892822,
+        -2.6291607779782566e-10,
+        1.4369831990990178e-09,
+        0.829037606716156
+      ],
+      "interval": [
+        0.3,
+        0.66
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0,
+            0.1,
+            0
+          ],
+          "interval": [
+            0.58,
+            0.78
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_back_panel",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        -0.075
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.22,
+        0.7
+      ]
+    },
+    {
+      "name": "HW_radiator",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0.115,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.35,
+        0.63
+      ]
+    },
+    {
+      "name": "HW_lid",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        -0.03,
+        0.24,
+        -0.035
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.02,
+        0.7
+      ]
+    },
+    {
+      "name": "HW_glass",
+      "start": [
+        -0.05000000074505806,
+        0.04399999976158142,
+        0.1379999965429306
+      ],
+      "end": [
+        -0.23000000074505805,
+        0.03999999976158142,
+        0.3599999965429306
+      ],
+      "quaternion": [
+        0,
+        -0.3826834323650898,
+        0,
+        0.9238795325112867
+      ],
+      "interval": [
+        0.06,
+        0.72
+      ]
+    },
+    {
+      "name": "HW_board",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.08
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.62,
+        0.86
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0.024,
+            0,
+            0
+          ],
+          "interval": [
+            0.5,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_aio_fan_1",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0.115,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.35,
+        0.63
+      ]
+    },
+    {
+      "name": "HW_aio_fan_2",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0.115,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.35,
+        0.63
+      ]
+    },
+    {
+      "name": "HW_aio_fan_3",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0.115,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.35,
+        0.63
+      ]
+    },
+    {
+      "name": "HW_pump",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.035
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.86,
+        0.98
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0.024,
+            0,
+            0
+          ],
+          "interval": [
+            0.5,
+            0.6
+          ]
+        },
+        {
+          "delta": [
+            0,
+            0,
+            0.08
+          ],
+          "interval": [
+            0.62,
+            0.86
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_bottom_tray",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.2
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.4,
+        0.56
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0,
+            0.026,
+            0
+          ],
+          "interval": [
+            0.3,
+            0.4
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_bottom_fan_1",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.2
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.4,
+        0.56
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0,
+            0.026,
+            0
+          ],
+          "interval": [
+            0.3,
+            0.4
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_bottom_fan_2",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        0.2
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.4,
+        0.56
+      ],
+      "carrier": [
+        {
+          "delta": [
+            0,
+            0.026,
+            0
+          ],
+          "interval": [
+            0.3,
+            0.4
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HW_side_tray",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        -0.075
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.22,
+        0.7
+      ]
+    },
+    {
+      "name": "HW_side_fan_1",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        -0.075
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.22,
+        0.7
+      ]
+    },
+    {
+      "name": "HW_side_fan_2",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        -0.075
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.22,
+        0.7
+      ]
+    },
+    {
+      "name": "HW_side_fan_3",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0,
+        0,
+        -0.075
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.22,
+        0.7
+      ]
+    },
+    {
+      "name": "HW_front_fan_carrier",
+      "start": [
+        0,
+        0,
+        0
+      ],
+      "end": [
+        0.055,
+        0,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "interval": [
+        0.4,
+        0.59
+      ]
+    }
+  ],
+  "hoseSteps": 32,
+  "corrections": [
+    "GPU hidden cooler return limited to Y=55mm (45mm at rear I/O); cooler Z adjusted -14.7mm; fitted PCB/x16 edge added.",
+    "Original blank PCIe covers removed for occupied slots; rear slot opening fitted; hidden fan carrier returns fitted between case/housing and one conflicting concealed return omitted.",
+    "Hidden RAM insertion edges thinned/keyed and corner clearances fitted to DIMM latches; fan mounting returns and straps relieved around housings/diffusers.",
+    "RAM seated 4mm outward of original CAD pose to match authored DIMM socket.",
+    "PSU seated on new case floor; lid and glass registered to new frame."
+  ],
+  "license": "CC BY-NC 4.0 / SpencerFrank source CAD; authored NexBuild case, board, AIO and rig",
+  "triangles": 637868,
+  "bytes": 3956688,
+  "minimumHoseRAMClearanceMm": 6.751,
+  "fanLayout": {
+    "bottom": 2,
+    "side": 3,
+    "diameterMm": 120,
+    "bottomPitchMm": 130,
+    "sidePitchMm": 130,
+    "reasonForTwoBottom": "PSU forward withdrawal + front frame leave <360mm clear length; 3x120 cannot fit.",
+    "bottomAirflow": "+Blender Z",
+    "sideAirflow": "-Blender Y",
+    "realFloorAndSideVents": true
+  },
+  "uniqueMeshTriangles": 573868,
+  "rotors": [
+    {
+      "name": "Rotor_HW_case_fan_1_2",
+      "axis": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_case_fan_2_4",
+      "axis": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_case_fan_3_9",
+      "axis": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_gpu_18",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_gpu_19",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_gpu_20",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_aio_fan_1_1434",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_aio_fan_2_1443",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_aio_fan_3_1452",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_aio_fan_1_1434__HW_bottom_fan_1",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_aio_fan_1_1434__HW_bottom_fan_2",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_aio_fan_1_1434__HW_side_fan_1",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_aio_fan_1_1434__HW_side_fan_2",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "Rotor_HW_aio_fan_1_1434__HW_side_fan_3",
+      "axis": [
+        0,
+        1,
+        0
+      ]
+    }
+  ]
+}

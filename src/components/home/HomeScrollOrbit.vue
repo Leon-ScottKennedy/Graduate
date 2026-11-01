@@ -25,7 +25,7 @@ let entryHeadDistance = 0
 const curveLength = 1800
 const cubeCount = 16
 const cubeSpacing = curveLength / (cubeCount - 1)
-let brandTextures: HTMLCanvasElement[] = []
+let brandTextures: { dark: HTMLCanvasElement[]; light: HTMLCanvasElement[] } = { dark: [], light: [] }
 let disposed = false
 let textBounds: { left: number; right: number; top: number; bottom: number }[] = []
 let observer: ResizeObserver | undefined
@@ -43,13 +43,17 @@ const cubePalette = {
   dark: [112, 104, 137], // #706889
   background: [18, 17, 23],
 } as const
+type CubePalette = { light: readonly number[]; side: readonly number[]; dark: readonly number[]; background: readonly number[] }
+const lightCubePalette: CubePalette = {
+  light: [223, 228, 234], side: [153, 164, 178], dark: [109, 123, 141], background: [247, 248, 250],
+}
 
-function faceColor(depth: number, visibility: number) {
-  const target = depth >= 0 ? cubePalette.light : cubePalette.dark
+function faceColor(depth: number, visibility: number, palette: CubePalette) {
+  const target = depth >= 0 ? palette.light : palette.dark
   const amount = Math.min(1, Math.abs(depth))
-  const channels = cubePalette.side.map((channel, index) => {
+  const channels = palette.side.map((channel, index) => {
     const lit = channel + (target[index]! - channel) * amount
-    return Math.round(lit * visibility + cubePalette.background[index]! * (1 - visibility))
+    return Math.round(lit * visibility + palette.background[index]! * (1 - visibility))
   })
   return `rgb(${channels.join(', ')})`
 }
@@ -155,6 +159,13 @@ function draw(now: number) {
   const offset = Math.max(0, Math.min(height - viewportHeight, -host.value.getBoundingClientRect().top))
   canvas.value.style.transform = `translateY(${offset}px)`
   context.clearRect(0, 0, width, viewportHeight)
+  // Layout changes can shift normalized progress even before the user scrolls.
+  // Gate the entrance on the actual page offset, including when returning to the top.
+  if (window.scrollY <= 24) {
+    phase = props.progress
+    lastTime = 0
+    return
+  }
   const elapsed = Math.min(50, lastTime ? now - lastTime : 16)
   lastTime = now
   const target = props.reducedMotion ? .35 : props.progress
@@ -164,7 +175,7 @@ function draw(now: number) {
   const spacing = mobile ? cubeSpacing * .5 : cubeSpacing
   const bodyLength = (cubeCount - 1) * spacing
   // Start after the first scroll; finish to the right of the final introduction.
-  const entryProgress = (window.innerHeight * .5 - storyTop + 12) / storyHeight
+  const entryProgress = (window.innerHeight * .5 - storyTop + 48) / storyHeight
   const exitProgress = (height - window.innerHeight * .12) / storyHeight
   const travel = Math.max(0, Math.min(1, (phase - entryProgress) / Math.max(.01, exitProgress - entryProgress)))
   if (travel <= 0 || travel >= 1) {
@@ -175,6 +186,7 @@ function draw(now: number) {
   const entranceOpacity = Math.min(1, Math.max(0, (phase - entryProgress) * storyHeight / 60))
   const head = entryHeadDistance + travel * (trackLength + bodyLength - entryHeadDistance)
   const cubes: { point: Point; index: number; size: number; opacity: number }[] = []
+  const isLight = document.documentElement.dataset.theme === 'light'
   for (let index = 0; index < cubeCount; index++) {
     const point = pointAt(head - index * spacing)
     if (!point) continue
@@ -182,18 +194,22 @@ function draw(now: number) {
     const front = Math.max(0, Math.min(1, (point.z / (mobile ? 80 : 260) + 1) / 2))
     const x = width / 2 + (point.x - width / 2) * perspective
     const y = point.y
-    // Fade softly behind copy so orbiting cubes never compete with the words.
+    // Light faces need a higher visibility floor against the pale background.
     let clearance = 1
     for (const bounds of textBounds) {
       const distance = Math.hypot(Math.max(bounds.left - x, 0, x - bounds.right), Math.max(bounds.top - y, 0, y - bounds.bottom))
-      clearance = Math.min(clearance, Math.min(1, distance / 40))
+      clearance = Math.min(clearance, Math.min(1, distance / (isLight ? 24 : 40)))
     }
-    cubes.push({ point: { x, y: y - offset, z: point.z }, index, size: (mobile ? 8 : 16) * perspective, opacity: (.1 + front * .85) * (.08 + clearance * .92) })
+    const depthVisibility = isLight ? .7 + front * .3 : .1 + front * .85
+    const copyVisibility = isLight ? .65 + clearance * .35 : .08 + clearance * .92
+    cubes.push({ point: { x, y: y - offset, z: point.z }, index, size: (mobile ? 8 : 16) * perspective, opacity: depthVisibility * copyVisibility })
   }
   cubes.sort((a, b) => a.point.z - b.point.z)
+  const textures = isLight ? brandTextures.light : brandTextures.dark
   for (const cube of cubes) {
     if (cube.point.y < -60 || cube.point.y > viewportHeight + 60) continue
     const spin = clock * .45
+    const palette = isLight ? lightCubePalette : cubePalette
     const points = corners.map(point => {
       const rotated = rotate(point, spin + cube.index * .71, spin * .63 + cube.index * 1.17, spin * .38 + cube.index * .47)
       return { x: cube.point.x + rotated.x * cube.size, y: cube.point.y + rotated.y * cube.size, z: rotated.z }
@@ -209,12 +225,12 @@ function draw(now: number) {
         else context.lineTo(point.x, point.y)
       })
       context.closePath()
-      context.fillStyle = faceColor(face.depth, cube.opacity)
+      context.fillStyle = faceColor(face.depth, cube.opacity, palette)
       context.fill()
-      context.strokeStyle = context.fillStyle
-      context.lineWidth = .6
+      context.strokeStyle = isLight ? `rgba(${palette.dark.join(', ')}, ${cube.opacity * .8})` : context.fillStyle
+      context.lineWidth = isLight ? 1 : .6
       context.stroke()
-      const texture = brandTextures[cube.index]
+      const texture = textures[cube.index]
       if (texture && face.depth > .12) {
         // Map the sticker into the face's local axes so it rotates and foreshortens.
         const origin = points[face.indices[0]!]!
@@ -226,7 +242,9 @@ function draw(now: number) {
           (bottom.x - origin.x) / 128, (bottom.y - origin.y) / 128,
           origin.x, origin.y,
         )
-        context.globalAlpha = entranceOpacity * cube.opacity * (.72 + face.depth * .28)
+        context.globalAlpha = isLight
+          ? entranceOpacity * Math.min(1, cube.opacity * 1.35) * (.85 + face.depth * .15)
+          : entranceOpacity * cube.opacity * (.72 + face.depth * .28)
         context.drawImage(texture, 10, 10, 108, 108)
         context.restore()
       }
@@ -240,9 +258,9 @@ function draw(now: number) {
 function schedule() { if (!frame) frame = requestAnimationFrame(draw) }
 watch(() => [props.progress, props.reducedMotion], schedule)
 onMounted(() => {
-  void createCubeBrandTextures().then(textures => {
+  void Promise.all([createCubeBrandTextures('dark'), createCubeBrandTextures('light')]).then(([dark, light]) => {
     if (disposed) return
-    brandTextures = textures
+    brandTextures = { dark, light }
     schedule()
   }).catch(() => {
     // Geometry remains available even if the browser cannot decode a sticker.
@@ -257,16 +275,18 @@ onMounted(() => {
   if (host.value) intersection.observe(host.value)
   window.addEventListener('resize', measure)
   window.addEventListener('scroll', schedule, { passive: true })
+  window.addEventListener('nexbuild-theme-change', schedule)
   measure()
 })
 onUnmounted(() => {
   disposed = true
-  brandTextures = []
+  brandTextures = { dark: [], light: [] }
   cancelAnimationFrame(frame)
   observer?.disconnect()
   intersection?.disconnect()
   window.removeEventListener('resize', measure)
   window.removeEventListener('scroll', schedule)
+  window.removeEventListener('nexbuild-theme-change', schedule)
 })
 </script>
 

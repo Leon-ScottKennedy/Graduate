@@ -1,4 +1,4 @@
-﻿.home_story { position: relative; isolation: isolate; }
+.home_story { position: relative; isolation: isolate; }
 .home_overview { color: var(--text-primary); scroll-margin-top: 80px; }
 .home_feature { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 200px; max-width: 1120px; margin-inline: auto; min-height: 650px; padding-block: 100px; border-top: 1px solid var(--border-divider); }
 .home_feature_copy { width: 100%; max-width: 310px; }
@@ -9,7 +9,7 @@
 .home_feature_reverse .home_feature_visual { grid-column: 1; grid-row: 1; }
 .home_scene_list { display: grid; gap: 16px; }
 .home_scene_row { display: flex; align-items: center; gap: 20px; padding: 24px; border: 1px solid #363340; background: #1a191f; border-radius: 10px; color: var(--text-secondary); text-decoration: none; }
-.home_scene_row:hover { border-color: var(--color-primary-light); }
+a.home_scene_row:hover { border-color: var(--color-primary-light); }
 .home_scene_row > span:last-child { margin-left: auto; color: var(--text-label); }
 .home_scene_symbol { width: 48px; text-align: center; color: #b4a7ff; font-size: 38px; }
 .home_scene_row:nth-child(2) .home_scene_symbol { color: #89c9b9; }
@@ -23,16 +23,16 @@
 .overview_link { display: inline-flex; gap: 32px; margin-top: 28px; color: var(--color-primary-light); text-decoration: none; font-size: 14px; }
 .overview_link:hover { text-decoration: underline; text-underline-offset: 6px; }
 .overview_compare, .overview_chat { padding: 28px; border: 1px solid #363340; border-radius: 12px; background: linear-gradient(135deg, #201e2a, #18181d); }
-.overview_demo_label { margin-bottom: 20px; color: var(--text-label); font-size: 11px; letter-spacing: 1px; }
-.overview_compare > div:not(.overview_demo_label) { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 20px 0; border-bottom: 1px solid #34313f; font-size: 12px; color: var(--text-muted); }
-.overview_compare > div > :not(:first-child) { text-align: center; }
-.overview_compare strong { color: var(--color-primary-light); font-size: 14px; }
-.overview_compare > p { margin-top: 24px; font-size: 12px; color: var(--text-label); }
 .overview_question { padding: 18px; border-radius: 10px 10px 0 10px; background: #343043; font-size: 14px; line-height: 1.7; }
 .overview_answer { display: flex; gap: 16px; padding: 28px 0; font-size: 14px; line-height: 1.9; color: var(--text-secondary); }
 .overview_answer > span { color: var(--color-primary-light); font-weight: 700; white-space: nowrap; }
 .overview_chat_topics { display: flex; flex-wrap: wrap; gap: 8px; }
 .overview_chat_topics span { padding: 7px 10px; border: 1px solid #3a3648; border-radius: 20px; font-size: 11px; color: var(--text-muted); }
+.overview_demo_label { margin-bottom: 20px; color: var(--text-label); font-size: 11px; letter-spacing: 1px; }
+.overview_compare > div:not(.overview_demo_label) { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 20px 0; border-bottom: 1px solid #34313f; font-size: 12px; color: var(--text-muted); }
+.overview_compare > div > :not(:first-child) { text-align: center; }
+.overview_compare strong { color: var(--color-primary-light); font-size: 14px; }
+.overview_compare > p { margin-top: 24px; font-size: 12px; color: var(--text-label); }
 .overview_demo_note { display: block; margin-top: 20px; color: var(--text-label); font-size: 11px; line-height: 1.7; }
 .overview_cta { position: relative; z-index: 1; padding: 88px 24px 100px; text-align: center; border-top: 1px solid var(--border-divider); background: #141319; }
 .overview_cta h2 { margin-top: 18px; font-size: clamp(26px, 3.2vw, 40px); line-height: 1.4; }
@@ -57,5 +57,6 @@
 .home_feature_copy, .home_feature_visual { position: relative; z-index: 3; }
 .home_feature { z-index: auto; }
 .home_feature_copy { padding-block: 14px; }
-.home_story .hero { position: relative; z-index: 3; }
+.home_story .hero { position: relative; z-index: auto; }
+.home_story .hero_intro { z-index: 3; }
 @media (max-width: 700px) { .home_orbit { opacity: .6; } }

@@ -1,4 +1,9 @@
 import type { PartGroup, PartOption } from '../types/hardware'
+import { newerAlternative } from './hardwareGeneration'
+import { checkBuildCompatibility, hardwareSocket } from './buildCompatibility'
+import type { DemandWeights } from './demandWeights'
+
+export type CpuPlatform = 'all' | 'AMD' | 'Intel'
 
 // Heuristic spending profiles, not measured hardware performance or an ML model.
 const profiles: Record<string, Record<string, number>> = {
@@ -50,26 +55,54 @@ export function selectBuild(
   budget: number,
   usage: string,
   preference: string,
+  platform: CpuPlatform = 'all',
+  demandWeights?: DemandWeights,
+) {
+  const catalog = platform === 'all' ? groups : groups.map(group => group.id === 'cpu'
+    ? { ...group, options: group.options.filter(part => part.brand.toLowerCase().includes(platform.toLowerCase())) as PartGroup['options'] } : group)
+  return selectFromCatalog(catalog, budget, usage, preference, demandWeights)
+}
+
+function selectFromCatalog(
+  groups: PartGroup[], budget: number, usage: string, preference: string, demandWeights?: DemandWeights,
 ) {
   if (!Number.isFinite(budget) || budget <= 0) return null
   const limit = Math.round(budget * 100)
-  const target = limit * (preference === '控制预算' ? 0.9 : 1)
   const profile = { ...(profiles[usage] ?? profiles['游戏电竞']!) }
-  if (preference === '静音优先') {
-    profile.gpu! -= 0.04
-    profile.case! += 0.02
-    profile.cooler! += 0.02
+  if (demandWeights) {
+    const axes = { gaming: '游戏电竞', creation: '内容创作', office: '办公学习', ai: 'AI 计算' } as const
+    for (const category of Object.keys(profile)) {
+      profile[category] = Object.entries(axes).reduce((sum, [axis, label]) => sum + profiles[label]![category]! * demandWeights[axis as keyof DemandWeights] / 100, 0)
+    }
   }
+  if (preference === '性能优先') {
+    let reallocated = 0
+    for (const category of ['board', 'ram', 'ssd', 'power', 'case', 'cooler']) {
+      const reduction = profile[category]! * 0.15
+      profile[category]! -= reduction
+      reallocated += reduction
+    }
+    const coreShare = profile.cpu! + profile.gpu!
+    profile.cpu! += reallocated * (profile.cpu! / coreShare)
+    profile.gpu! += reallocated * (profile.gpu! / coreShare)
+  }
+  // Budget/usage determine the target; incomplete merchant coverage must not cap it.
+  const target = limit * (preference === '性价比优先' ? 0.9 : 1)
   const cents = (option: PartOption) => Math.round(option.price * 100)
   const score = (category: string, option: PartOption) => {
     const share = profile[category] ?? 0.05
-    return -((cents(option) / target - share) ** 2) / share
+    const alternatives = groups.find(group => group.id === category)?.options ?? []
+    const agePenalty = newerAlternative(category, option, alternatives) ? 0.02 : 0
+    const quoteBonus = option.marketOffer ? 0.001 : 0
+    return -((cents(option) / target - share) ** 2) / share - agePenalty + quoteBonus
   }
   const cpus = groups.find((group) => group.id === 'cpu')!
   const gpus = groups.find((group) => group.id === 'gpu')!
   let best: { score: number; total: number; picks: Record<string, PartOption> } | undefined
   for (const cpu of cpus.options) {
+    if (cpu.price <= 0 || cpu.requiresQuote) continue
     for (const gpu of gpus.options) {
+      if (gpu.price <= 0 || gpu.requiresQuote) continue
       const initialCost = cents(cpu) + cents(gpu)
       if (initialCost > limit) continue
       let states = new Map<number, State>([
@@ -85,6 +118,10 @@ export function selectBuild(
         const next = new Map<number, State>()
         for (const [cost, state] of states) {
           for (const option of group.options) {
+            if (option.price <= 0 || option.requiresQuote) continue
+            if (group.id === 'board' && hardwareSocket(cpu) !== hardwareSocket(option)) continue
+            if (group.id === 'cooler' && option.compatibility?.coolerSockets
+              && !option.compatibility.coolerSockets.includes(hardwareSocket(cpu) ?? '')) continue
             if (
               group.id === 'power' &&
               (option.psuWatts ?? 0) < (gpu.minPsuWatts ?? (gpu.id === 'gpu-b' ? 650 : 550))
@@ -93,7 +130,6 @@ export function selectBuild(
             if (group.id === 'board' && (option.boardTier ?? 1) < (cpu.minBoardTier ?? 0)) continue
             if (group.id === 'cooler' && (option.coolingTier ?? 0) < (cpu.minCoolingTier ?? 0))
               continue
-            // These M-ATX cases cannot take an ATX board. Radiator support is separate.
             if (
               group.id === 'case' &&
               ['case-a', 'case-entry'].includes(option.id) &&
@@ -118,6 +154,7 @@ export function selectBuild(
         states = next
       }
       for (const [total, state] of states) {
+        if (checkBuildCompatibility(state.picks).errors.length) continue
         const utility = state.score - 40 * ((target - total) / target) ** 2
         if (!best || utility > best.score) best = { score: utility, total, picks: state.picks }
       }

@@ -73,6 +73,7 @@ class TaobaoClient:
     def __init__(self, settings, transport=None):
         self.settings = settings
         self.transport = transport
+        self.before_request = None
 
     @property
     def search_configured(self):
@@ -123,6 +124,8 @@ class TaobaoClient:
         parameters['sign'] = sign(parameters, self.settings.taobao_app_secret)
         try:
             with httpx.Client(transport=self.transport, timeout=25, follow_redirects=False, trust_env=False) as client:
+                if self.before_request:
+                    self.before_request()
                 response = client.post(GATEWAY, data=parameters)
                 response.raise_for_status()
             payload = response.json()
@@ -161,7 +164,9 @@ class TaobaoClient:
                           num_iids=','.join(dict.fromkeys(identifiers)), platform='1', biz_scene_id=scene)
         parameters['sign'] = sign(parameters, self.settings.taobao_app_secret)
         try:
-            with httpx.Client(transport=self.transport, timeout=20, follow_redirects=False) as client:
+            with httpx.Client(transport=self.transport, timeout=20, follow_redirects=False, trust_env=False) as client:
+                if self.before_request:
+                    self.before_request()
                 response = client.post(GATEWAY, data=parameters)
                 response.raise_for_status()
             payload = response.json()

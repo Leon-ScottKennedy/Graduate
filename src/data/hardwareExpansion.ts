@@ -27,26 +27,42 @@ const entry = (
   requiresQuote: true,
   tag: '官方型号资料 · 价格待录入',
 })
-const cpu = (model: string, socket: string, source: string, brand = 'AMD') =>
-  entry(
+const cpu = (model: string, socket: string, source: string, brand = 'AMD') => ({
+  ...entry(
     `cpu-${model.toLowerCase()}`,
     brand,
     `${brand} ${model}`,
     `${socket} · 内存及 BIOS 支持需核对主板`,
     source,
     { socket },
-  )
-const msi = (model: string, memory: string, source?: string) =>
-  entry(
+  ),
+  minBoardTier: 1,
+  minCoolingTier: /Ryzen 9|Core i[79]/.test(model) ? 2 : 1,
+})
+const msi = (model: string, memory: string, source?: string) => ({
+  ...entry(
     `gpu-${model.toLowerCase().replace(/\s+/g, '-')}`,
     '微星 MSI',
     `微星 ${model}`,
     `${memory} · 显卡尺寸及供电接口待核验`,
     source ?? `https://www.msi.com/Graphics-Card/${model.replace(/\s+/g, '-')}`,
-  )
+  ),
+  ...(model === 'GeForce RTX 5070 12G VENTUS 3X OC' ? { minPsuWatts: 650, compatibility: { gpuLengthMm: 302 } } : {}),
+  ...(model === 'GeForce RTX 5070 Ti 16G VENTUS 3X OC' ? { minPsuWatts: 750, compatibility: { gpuLengthMm: 303 } } : {}),
+})
 const ssd = (id: string, brand: string, name: string, capacity: string, source: string) =>
   entry(`ssd-${id}`, brand, name, `${capacity} · M.2 NVMe · PCIe 4.0`, source)
 export const hardwareExpansion: Record<string, PartOption[]> = {
+  board: [
+    { ...entry('board-msi-pro-b760m-a-wifi', '微星 MSI', '微星 PRO B760M-A WIFI', 'LGA1700 · DDR5 · M-ATX · Wi-Fi 6E · 14代需核对 BIOS',
+      'https://www.msi.com/Motherboard/PRO-B760M-A-WIFI/Specification', { socket: 'LGA1700', memoryType: 'DDR5', boardForm: 'M-ATX' }), boardTier: 1 },
+    { ...entry('board-msi-pro-z790-a-wifi', '微星 MSI', '微星 PRO Z790-A WIFI', 'LGA1700 · DDR5 · ATX · Wi-Fi 6E · 14代需核对 BIOS',
+      'https://www.msi.com/Motherboard/PRO-Z790-A-WIFI/Specification', { socket: 'LGA1700', memoryType: 'DDR5', boardForm: 'ATX' }), boardTier: 2 },
+    { ...entry('board-asus-prime-b760m-a-wifi', '华硕 ASUS', '华硕 PRIME B760M-A WIFI', 'LGA1700 · DDR5 · M-ATX · Wi-Fi 6 · 14代需核对 BIOS',
+      'https://www.asus.com/motherboards-components/motherboards/prime/prime-b760m-a-wifi/techspec/', { socket: 'LGA1700', memoryType: 'DDR5', boardForm: 'M-ATX' }), boardTier: 1 },
+    { ...entry('board-asus-prime-z790-p-wifi', '华硕 ASUS', '华硕 PRIME Z790-P WIFI', 'LGA1700 · DDR5 · ATX · Wi-Fi 6 · 14代需核对 BIOS',
+      'https://www.asus.com/motherboards-components/motherboards/prime/prime-z790-p-wifi/techspec/', { socket: 'LGA1700', memoryType: 'DDR5', boardForm: 'ATX' }), boardTier: 2 },
+  ],
   cpu: [
     cpu('Ryzen 5 9600X', 'AM5', amd9000),
     cpu('Ryzen 7 9700X', 'AM5', amd9000),
@@ -71,6 +87,12 @@ export const hardwareExpansion: Record<string, PartOption[]> = {
     cpu('Core i9-14900K', 'LGA1700', intel, 'Intel'),
   ],
   gpu: [
+    {
+      ...entry('gpu-galax-5060ti-saint-oc-8gb', '影驰 GALAX',
+        '影驰 GeForce RTX 5060 Ti 圣刃 OC 8GB', '8GB GDDR7 · 尺寸及接口待核验',
+        'https://www.jd.com/brand/137652e2dfe38445e4f40.html'),
+      minPsuWatts: 600,
+    },
     msi('GeForce RTX 5070 12G VENTUS 3X OC', '12GB GDDR7'),
     msi('GeForce RTX 5070 12G VENTUS 2X OC', '12GB GDDR7'),
     msi('GeForce RTX 5070 12G SHADOW 3X OC', '12GB GDDR7'),

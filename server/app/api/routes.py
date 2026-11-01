@@ -85,6 +85,29 @@ class MarketCompareRequest(JDCompareRequest):
     platform: str = Field(default='all', pattern=r'^(all|jd|taobao)$')
 
 
+class CatalogModel(JDCompareRequest):
+    id: str = Field(min_length=1, max_length=160)
+
+
+class CatalogOffersRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    models: list[CatalogModel] = Field(min_length=1, max_length=120)
+
+
+@router.post('/market/catalog-offers')
+def catalog_offers(body: CatalogOffersRequest, request: Request):
+    service = MarketComparisonService(request.app.state.database)
+    offers = []
+    for model in body.models:
+        if model.category not in CATEGORIES:
+            raise HTTPException(422, '未知配件类别')
+        result = service.compare(model.category, model.brand, model.modelName, model.specs)
+        offer = next((item for item in result['products'] if not item['stale'] and item['price'] is not None and item['productUrl']), None)
+        if offer:
+            offers.append(dict(modelId=model.id, **offer))
+    return dict(offers=offers)
+
+
 @router.post('/market/compare')
 def market_compare(body: MarketCompareRequest, request: Request):
     if body.category not in CATEGORIES:

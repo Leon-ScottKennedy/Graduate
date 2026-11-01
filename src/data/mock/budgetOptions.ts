@@ -1,5 +1,5 @@
 // Synthetic reference prices for budget-selection testing, NOT collected JD offers.
-// All CPU/board candidates use AM5/DDR5. Dimensions/BIOS remain unverified.
+// Base CPU/board candidates use AM5/DDR5; the expansion catalog also includes Intel.
 import type { PartOption } from '../../types/hardware'
 
 function part(
@@ -89,9 +89,11 @@ export const budgetOptions: Record<string, PartOption[]> = {
     ),
     part('cooler-c', '九州风神 DeepCool', '九州风神 AK620', 499, '双塔风冷 · 安装兼容性待核验', {
       coolingTier: 2,
+      compatibility: { coolerSockets: ['AM4', 'AM5', 'LGA115X', 'LGA1200', 'LGA1700'], coolerHeightMm: 160 },
     }),
     part('cooler-d', '九州风神 DeepCool', '九州风神 LS720', 699, '360 水冷 · 机箱安装空间待核验', {
       coolingTier: 2,
+      compatibility: { coolerSockets: ['AM4', 'AM5', 'LGA115X', 'LGA1200', 'LGA1700'], radiatorMm: 360 },
     }),
   ],
 }

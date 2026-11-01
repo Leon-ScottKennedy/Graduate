@@ -3,12 +3,17 @@
 Vue 3 + TypeScript + Vite 的装机网站，后端使用 Python + FastAPI + SQLite。
 配置清单仍使用预设硬件与参考价格；右侧“京东商品”展示精选池采集、清洗并保存的真实同类硬件，包含品牌、展示价、采集时间及商品链接。
 
-## 启动前端
+## 启动开发环境
 
 ```powershell
 npm install
 npm run dev
 ```
+
+`npm run dev` 会先检查并启动本地 Python 后端，确认 `8000` 端口就绪后再启动前端，
+避免只启动前端导致商品查询出现 HTTP 502。首次使用需按 [后端说明](server/README.md)
+创建 `server/.venv` 并安装依赖；已有 `.env` 不要覆盖。
+`npm run dev:frontend` 只启动前端，`npm run dev:server` 只检查/启动后端。
 
 ## 项目目录
 

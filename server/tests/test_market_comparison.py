@@ -33,11 +33,11 @@ class MarketComparisonTests(unittest.TestCase):
 
     def test_merchant_priority_uses_platform_metadata(self):
         self.assertEqual(merchant_profile('jd', '普通店名', {'owner': 'g'}), (0, '京东自营'))
-        self.assertEqual(merchant_profile('jd', '京东自营旗舰店', {'owner': 'p'}), (2, '京东'))
-        self.assertEqual(merchant_profile('taobao', '华硕官方旗舰店', {'item_basic_info': {'user_type': 1}}), (0, '天猫'))
-        self.assertEqual(merchant_profile('taobao', '华硕专卖店', {'item_basic_info': {'user_type': 1}}), (0, '天猫'))
-        self.assertEqual(merchant_profile('taobao', '华硕官方旗舰店', {'item_basic_info': {'user_type': 0}}), (1, '淘宝'))
-        self.assertEqual(merchant_profile('taobao', '电脑小店', {}), (3, '淘宝'))
+        self.assertEqual(merchant_profile('jd', '京东自营旗舰店', {'owner': 'p'}), (3, '京东'))
+        self.assertEqual(merchant_profile('taobao', '华硕官方旗舰店', {'item_basic_info': {'user_type': 1}}), (2, '天猫'))
+        self.assertEqual(merchant_profile('taobao', '华硕专卖店', {'item_basic_info': {'user_type': 1}}), (2, '天猫'))
+        self.assertEqual(merchant_profile('taobao', '华硕官方旗舰店', {'item_basic_info': {'user_type': 0}}), (4, '淘宝'))
+        self.assertEqual(merchant_profile('taobao', '电脑小店', {}), (4, '淘宝'))
 
     def test_gpu_vendor_and_condition_filter(self):
         for title, brand in [('PNY 必恩威 RTX4070 Super 无拆无修', 'PNY'),
@@ -80,10 +80,7 @@ class MarketComparisonTests(unittest.TestCase):
                     response = api.post('/api/market/compare', json=dict(category='gpu', brand=brand, modelName=name, specs='RTX 4070 SUPER · 12GB GDDR6X'))
                     self.assertEqual(response.status_code, 200)
                     rows = response.json()['products']
-                    self.assertEqual({row['id'] for row in rows}, {'0', '1', '4'})
-                    self.assertEqual(rows[0]['id'], '1')
-                    self.assertEqual(rows[0]['platformLabel'], '天猫')
-                    self.assertTrue(any(row['matchStatus'] == 'reference' and '同芯片' in row['relationLabel'] for row in rows))
+                    self.assertEqual(rows, [], 'Tmall status and flagship names do not establish ownership')
                 remote.assert_not_called()
 
     def test_cross_platform_latest_snapshot_and_model_isolation(self):
@@ -100,6 +97,9 @@ class MarketComparisonTests(unittest.TestCase):
                     ]):
                         raw = db.execute("INSERT INTO raw_records(task_id,captured_at,payload_json) VALUES('task','2026-10-20','{}')").lastrowid
                         db.execute('INSERT INTO products(id,platform,platform_product_id,shop) VALUES(?,?,?,?)', (str(index), platform, str(index), '同名店铺'))
+                        if index == 0:
+                            db.execute('UPDATE raw_records SET payload_json=? WHERE id=?', ('{"owner":"g"}', raw))
+                            db.execute('UPDATE products SET product_url=? WHERE id=?', ('https://item.jd.com/123456.html', str(index)))
                         db.execute('INSERT INTO product_details VALUES(?,?,?,?)', (str(index), title, 'AMD', raw))
                         if index == 4:
                             db.execute('UPDATE raw_records SET payload_json=? WHERE id=?', ('{"item_basic_info":{"category_name":"散热器"}}', raw))
@@ -107,12 +107,16 @@ class MarketComparisonTests(unittest.TestCase):
                     db.execute("INSERT INTO price_snapshots(product_id,task_id,raw_record_id,price_cents,collected_at,price_type) VALUES('1','task',2,NULL,'2026-10-20T01:00:00+00:00','listed')")
                 target = dict(category='cpu', brand='AMD', modelName='AMD Ryzen 5 7500F', specs='AM5')
                 result = api.post('/api/market/compare', json=target).json()
-                self.assertEqual(result['counts'], dict(jd=1, taobao=2))
-                self.assertEqual(result['total'], 3)
+                self.assertEqual(result['counts'], dict(jd=1, taobao=0))
+                self.assertEqual(result['total'], 1)
                 by_id = {row['id']: row for row in result['products']}
-                self.assertIsNone(by_id['1']['price'])
-                self.assertEqual(by_id['3']['matchStatus'], 'reference')
+                self.assertNotIn('1', by_id)
+                self.assertNotIn('3', by_id)
                 self.assertEqual(by_id['0']['matchStatus'], 'title_match')
                 filtered = api.post('/api/market/compare', json={**target, 'platform': 'jd'}).json()
                 self.assertEqual(filtered['total'], 1)
+                with api.app.state.database.connect() as db:
+                    db.execute("INSERT INTO price_snapshots(product_id,task_id,raw_record_id,price_cents,collected_at,price_type) VALUES('0','task',1,NULL,'2026-10-21T01:00:00+00:00','listed')")
+                self.assertEqual(api.post('/api/market/compare', json=target).json()['total'], 0,
+                                 'An invalid latest price must not resurrect an older offer')
                 self.assertEqual(api.post('/api/market/compare', json={**target, 'platform': 'bad'}).status_code, 422)

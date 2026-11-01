@@ -1,0 +1,247 @@
+/* One continuous pixel grid spans the navigation backdrop and hero. */
+body:has(.home_story) { background-color: #090909; }
+.home_story .hero { overflow: visible; }
+/* Restore the compact card-era composition, with the live PC in its right track. */
+@media (min-width: 901px) {
+  .home_story .hero {
+    min-height: calc(100svh - 80px);
+    display: grid;
+    align-items: center;
+    padding-block: 32px clamp(160px, 17.5svh, 240px);
+    padding-inline: 32px;
+  }
+  .home_story .hero_intro {
+    max-width: 1232px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 56px;
+  }
+  .home_story .hero .hero_title {
+    font-size: clamp(44px, 5.2vw, 76px);
+  }
+}
+@media (max-width: 900px) {
+  .home_story .hero { padding: 40px 24px; }
+  .home_story .hero_intro {
+    max-width: 640px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+@media (max-width: 360px) {
+  .home_story .hero { padding-block: 24px; }
+  .home_story .hero_intro { gap: 24px; }
+}
+.home_story .home_overview > .home_feature:first-of-type {
+  border-top-color: transparent;
+  min-height: 560px;
+  padding-block: 72px 80px;
+}
+@media (max-width: 700px) {
+  .home_story .home_overview > .home_feature:first-of-type {
+    min-height: 0;
+    padding-block: 48px 56px;
+  }
+}
+.home_story .home_heading_line { display: block; white-space: nowrap; }
+.home_story {
+  --color-primary: #4a5260;
+  --color-primary-light: #c3c9d3;
+  --text-primary: #f5f7fa;
+  --text-secondary: #e0e5ed;
+  --text-muted: #b3bbc7;
+  --text-label: #a0aab8;
+  --border-divider: #23252b;
+}
+
+.home_story .hero_eyebrow { color: #adb9cb; }
+.home_story .hero .hero_title_line {
+  color: #f1f2f4;
+  text-shadow: none;
+}
+.home_story .hero .hero_title_line + .hero_title_line {
+  color: #e4e9f1;
+  text-shadow: none;
+}
+.home_story .hero_title_line::before {
+  background: transparent;
+}
+.home_story .hero .hero_subtitle {
+  padding: 0;
+  background: transparent;
+  --step-frame-fill: transparent;
+  color: #bdc7d5;
+}
+.home_story .hero_actions { align-items: center; gap: 14px; margin-top: 28px; }
+.home_story .hero_start_action,
+.home_story .hero_learn_more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 48px;
+  padding: 12px 18px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .18s ease, border-color .18s ease;
+}
+.home_story .hero_start_action { min-width: 150px; background: light-dark(#272b31, #eff1f4); color: light-dark(#ffffff, #191c21); font-weight: 600; }
+.home_story .hero_start_action:hover { background: light-dark(#3a4049, #ffffff); }
+.home_story .hero_learn_more { min-width: 132px; background: transparent; border-color: light-dark(#cbd1d9, #3b3b3b); color: var(--text-muted); }
+.home_story .hero_learn_more:hover { background: light-dark(#eceff3, #191919); border-color: light-dark(#a3adbb, #666666); color: var(--text-primary); }
+.home_story :is(.hero_start_action, .hero_learn_more):focus-visible { outline: 2px solid currentColor; outline-offset: 5px; }
+@media (prefers-reduced-motion: reduce) { .home_story :is(.hero_start_action, .hero_learn_more) { transition: none; } }
+.home_story .hero .hero_preview {
+  padding: 1px;
+  border-radius: 4px;
+  clip-path: none;
+  box-shadow: 6px 6px 0 rgb(0 0 0 / .55), 0 24px 64px #0004;
+  background: linear-gradient(var(--cta-border-angle),
+    #1a1a1a 0%, #393939 24%, #555555 44%,
+    #303030 62%, #171717 82%, #1a1a1a 100%);
+}
+.home_story .hero .hero_preview::before {
+  inset: 1px;
+  clip-path: none;
+  border-radius: 3px;
+  background: #0e0e0e;
+}
+.home_story .hero_preview_part {
+  padding-block: 18px;
+  border-bottom: 1px solid #ffffff0d;
+}
+.home_story .hero_preview_part strong { font-size: 15px; color: #ededed; }
+.home_story .hero_preview_body { padding: 28px; }
+.home_story .hero_preview_heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.home_story .hero_preview_heading h2 { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -.3px; }
+.home_story .hero_preview_heading > span { font-size: 11px; color: #a8a8a8; }
+.home_story .hero_preview_config { margin: 0; }
+.home_story .hero_preview_config > div { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: baseline; gap: 18px; padding: 23px 0; border-bottom: 1px solid #ffffff0d; }
+.home_story .hero_preview_config > div:last-child { border-bottom: 0; }
+.home_story .hero_preview_config dt { font-size: 12px; color: #979797; }
+.home_story .hero_preview_config dd { margin: 0; color: #ededed; font-size: 15px; font-weight: 500; line-height: 1.6; overflow-wrap: anywhere; }
+.home_story .hero_preview_bottom { margin-top: 12px; padding-top: 20px; }
+@media (max-width: 640px) {
+  .home_story .hero_preview_body { padding: 22px; }
+  .home_story .hero_preview_config > div { grid-template-columns: 48px minmax(0, 1fr); gap: 12px; padding: 19px 0; }
+  .home_story .hero_preview_config dd { font-size: 14px; }
+}
+.home_story .preview-spec-gap { margin-left: 16px; color: inherit; }
+.home_story .hero_preview .hero_preview_bar { border-bottom-color: #303030; }
+.home_story .hero_preview .hero_preview_tags span { border-color: #484848; color: #cbd7e8; }
+
+.home_story .home_feature { border-top-color: #282828; }
+.home_story .home_feature_copy h2 { color: #f1f4f9; text-shadow: none; }
+.home_story .home_feature_copy h2::after {
+  height: 1px;
+  background: linear-gradient(90deg, #5a5a5a, transparent);
+}
+.home_story .home_feature :is(.home_scene_row, .overview_compare, .overview_chat, .home_step_list li) {
+  background: #141414;
+  border: 1px solid #3b3b3b;
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 #ffffff10,
+    6px 6px 0 rgb(0 0 0 / .55);
+  color: #ffffff;
+}
+.home_story .home_feature .home_scene_row h3,
+.home_story .home_feature .home_step_list h3 { color: #ffffff; }
+.home_story .home_feature a.home_scene_row:hover {
+  border-color: #5b5b5b;
+  box-shadow: inset 0 1px 0 #ffffff18,
+    8px 8px 0 rgb(0 0 0 / .65);
+}
+.home_story .home_feature .home_scene_row p,
+.home_story .home_feature .home_scene_row > span:last-child { color: #d2d2d2; }
+.home_story .home_feature .home_scene_symbol { color: #c7c7c7; }
+.home_story .home_feature .home_scene_row:nth-child(2) .home_scene_symbol { color: #c7c7c7; }
+.home_story .home_feature .home_scene_row:nth-child(3) .home_scene_symbol { color: #c7c7c7; }
+.home_story .home_feature .overview_demo_label { color: #c2c2c2; }
+.home_story .home_feature .overview_compare > div:not(.overview_demo_label) { color: #dddddd; border-bottom-color: #454545; }
+.home_story .home_feature .overview_compare strong { color: #ffffff; }
+.home_story .home_feature .overview_compare > p { color: #c7c7c7; }
+.home_story .home_feature .overview_compare > div:nth-child(2) {
+  border-bottom-width: 1px;
+  border-image: linear-gradient(90deg, #4a4a4a, #303030) 1;
+}
+.home_story .home_feature .home_step_list h3 { color: #ffffff; }
+.home_story .home_feature .home_step_list span { color: #919eaf; }
+.home_story .home_feature .overview_question { background: #101010; color: #dce1e9; box-shadow: none; border-radius: 6px; }
+.home_story .home_feature .overview_answer { color: #dddddd; }
+.home_story .home_feature .overview_answer > span { color: #acb9cd; }
+.home_story .home_feature .overview_chat_topics span { border-color: #3b3b3b; color: #a5aebd; }
+.home_story .overview_cta { padding: 64px 24px 72px; background: #090909; }
+.home_story .overview_cta h2 {
+  margin-top: 0;
+  font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.4;
+  text-wrap: balance;
+  color: #f1f2f4;
+  text-shadow: none;
+}
+.home_story .overview_cta > p { margin: 16px auto 0; max-width: 28em; line-height: 1.8; color: #a5a5a5; }
+.home_story .overview_cta .hero_btn_primary { --cta-button-fill: #181818; color: #e7ebf2; }
+.home_story .overview_cta .hero_btn_primary:is(:hover, :focus-visible) { --cta-button-fill: #2b2b2b; }
+
+/* Muted terminal button with a hover text scramble. */
+.home_story .overview_cta .home-start-button,
+.home_story .overview_cta .home-start-button:is(:hover, :focus-visible) {
+  min-width: 192px;
+  min-height: 56px;
+  justify-content: center;
+  padding: 16px 32px;
+  font-size: 16px;
+  border: 1px solid light-dark(#a2a8b2, #454545);
+  border-radius: 6px;
+  overflow: hidden;
+  clip-path: none;
+  background: light-dark(#e8eaee, #242424);
+  color: light-dark(#202833, #f1f2f4);
+  animation: none;
+  box-shadow: inset 0 1px 0 #ffffff12;
+  transform: translateY(0);
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+}
+.home_story .overview_cta .home-start-button::before {
+  content: none;
+}
+.home_story .overview_cta .home-start-button::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  left: 0;
+  right: 0;
+  top: -8px;
+  height: 2px;
+  background: light-dark(#9297dd, #747cba);
+  box-shadow: 0 0 4px 1px light-dark(#9297dd88, #747cba66), 0 0 8px 2px light-dark(#9297dd33, #747cba22);
+  opacity: 0;
+}
+.home_story .overview_cta .home-start-button:is(:hover, :focus-visible)::after {
+  opacity: 1;
+  animation: start-button-scan 1.2s linear forwards;
+}
+@keyframes start-button-scan {
+  from { top: -8px; }
+  to { top: calc(100% + 8px); opacity: 0; }
+}
+.home_story .overview_cta .home-start-button:is(:hover, :focus-visible) {
+  border-color: light-dark(#8b8cab, #565966);
+  color: light-dark(#202833, #f1f2f4);
+  background: light-dark(#e1e3ec, #2b2b2b);
+}
+.home_story .overview_cta .home-start-button:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 1px 0 light-dark(#ffffff, #ffffff14);
+}
+.home_story .overview_cta .home-start-button:focus-visible { outline: 2px solid #999; outline-offset: 5px; }
+.home-start-button .start-label { display: inline-flex; gap: 0; }
+.home-start-button .start-label > span { display: inline-block; width: 1em; text-align: center; }
+@media (prefers-reduced-motion: reduce) {
+  .home_story .overview_cta .home-start-button { transition: none; }
+  .home_story .overview_cta .home-start-button:is(:hover, :focus-visible)::after { animation: none; opacity: 0; }
+}

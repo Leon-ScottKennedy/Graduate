@@ -1,8 +1,10 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
 
 const router = createRouter({
-  history: createWebHistory('/'),
+  history: import.meta.env.MODE === 'pages'
+    ? createWebHashHistory(import.meta.env.BASE_URL)
+    : createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior() {
     // 切换页面时回到顶部
     return { top: 0 }
@@ -17,11 +19,6 @@ const router = createRouter({
       path: '/smart-build',
       name: 'smart-build',
       component: () => import('../views/SmartBuildPage.vue')
-    },
-    {
-      path: '/ai-chat',
-      name: 'ai-chat',
-      component: () => import('../views/AiChatPage.vue')
     },
     {
       path: '/config-plan',

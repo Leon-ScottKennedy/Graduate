@@ -113,6 +113,18 @@ add(
   'RTX 4080 SUPER · 16GB GDDR6X',
   { minPsuWatts: 850 },
 )
+
+// Official model identity only; no observed CNY quote is available yet.
+add('gpu', 'colorful-4070tis', '七彩虹 Colorful', '七彩虹 战斧 GeForce RTX 4070 Ti SUPER 豪华版 16GB', 0,
+  'RTX 4070 Ti SUPER · 16GB GDDR6X', {
+    requiresQuote: true, tag: '型号已登记 · 待报价',
+    specSource: 'https://www.colorful.com.cn/home/product?id=de4af1f8-d6a6-47f1-841c-c630f0a19470&mid=102',
+  })
+add('gpu', 'gigabyte-4070tis', '技嘉 GIGABYTE', '技嘉 GeForce RTX 4070 Ti SUPER WINDFORCE OC 16G', 0,
+  'RTX 4070 Ti SUPER · 16GB GDDR6X', {
+    requiresQuote: true, tag: '型号已登记 · 待报价', minPsuWatts: 750, compatibility: { gpuLengthMm: 261 },
+    specSource: 'https://www.gigabyte.com/Graphics-Card/GV-N407TSWF3OC-16GD/sp?lan=en',
+  })
 add('gpu', '5080', '微星 MSI', '微星 RTX 5080 GAMING TRIO OC', 14499, 'RTX 5080 · 16GB GDDR7', {
   minPsuWatts: 1000,
 })

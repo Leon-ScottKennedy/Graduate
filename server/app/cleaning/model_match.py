@@ -12,6 +12,16 @@ BRANDS = [
     ('sapphire', ['蓝宝石', 'sapphire']), ('gskill', ['芝奇', 'g.skill', 'gskill']),
     ('huntkey', ['航嘉', 'huntkey']), ('sama', ['先马', 'sama']),
     ('lianli', ['联力', 'lian li', 'lianli']), ('galax', ['影驰', 'galax']),
+    ('colorful', ['七彩虹', 'colorful']), ('zotac', ['索泰', 'zotac']),
+    ('lexar', ['雷克沙', 'lexar']), ('crucial', ['英睿达', '镁光', 'crucial']),
+    ('teamgroup', ['十铨', 'teamgroup', 't-force']),
+    ('intel', ['英特尔', 'intel']), ('kioxia', ['铠侠', 'kioxia']),
+    ('seagate', ['希捷', 'seagate']), ('adata', ['威刚', 'adata', 'xpg']),
+    ('kingbank', ['金百达', 'kingbank']), ('acer', ['宏碁', 'acer', 'predator']),
+    ('inno3d', ['映众', 'inno3d']), ('gainward', ['耕升', 'gainward']),
+    ('xfx', ['讯景', 'xfx']), ('powercolor', ['撼讯', 'powercolor']),
+    ('superflower', ['振华', 'super flower']), ('seasonic', ['海韵', 'seasonic']),
+    ('antec', ['安钛克', 'antec']), ('montech', ['君主', 'montech']),
 ]
 
 
@@ -29,6 +39,11 @@ def brand_key(value):
 
 def model_key(name, brand):
     text = unicodedata.normalize('NFKC', clean_text(name)).casefold()
+    if brand_key(brand) == 'corsair':
+        text = text.replace('复仇者', 'vengeance').replace('统治者', 'dominator')
+    if brand_key(brand) == 'asus':
+        for alias, series in [('雪豹', 'dual'), ('大师', 'prime'), ('巨齿鲨', 'ats')]:
+            text = text.replace(alias, series)
     for canonical, aliases in BRANDS:
         if canonical == brand_key(brand):
             for alias in sorted(aliases, key=len, reverse=True):
@@ -52,13 +67,15 @@ def flags(text):
     }.items():
         if re.search(pattern, text):
             result.add(flag)
+    if re.search(r'(?<![a-z0-9])o(?:8|16)g(?![a-z0-9])', text):
+        result.add('oc')
     return result
 
 
 def capacities(text):
     text = unicodedata.normalize('NFKC', text).casefold()
-    amounts = {float(number) * (1024 if unit == 'tb' else 1)
-               for number, unit in re.findall(r'(\d+(?:\.\d+)?)\s*(tb|gb|g)(?![a-z])', text)}
+    amounts = {float(number) * (1024 if unit in ('tb', 't') else 1)
+               for number, unit in re.findall(r'(\d+(?:\.\d+)?)\s*(tb|gb|t|g)(?=$|[^a-z]|gddr|ddr)', text)}
     # A kit may expose both total and per-module capacities.
     for number, modules in re.findall(r'(\d+)\s*g(?:b)?\s*[x×*]\s*(\d+)', text):
         amounts.discard(float(number))
@@ -70,12 +87,43 @@ def matches(category, brand, name, specs, product):
     if not clean_text(product.get('brand')) or brand_key(brand) != brand_key(product['brand']):
         return False
     title = clean_text(product.get('name'))
-    if re.search(r'二手|拆机|翻新|维修|定金|补差|差价|租赁|空盒|包装盒|套餐', title):
+    if re.search(r'二手|拆机|翻新|维修|定金|补差|差价|租赁|空盒|包装盒|套餐|服务器|笔记本|整机|组装机|电脑主机|全家桶', title):
         return False
     if category != 'ram' and '套装' in title:
         return False
-    target_key = model_key(name, brand)
-    source_key = model_key(title, brand)
+    if category == 'case' and len(set(re.findall(r'(?<![a-z])([a-z]{1,5}\d{1,4})(?!\d)', title, re.I))) > 1:
+        return False
+    if category == 'gpu':
+        # Match the chip and edition independently of memory placement/marketing suffixes.
+        # Retail titles often append GDDR/DLSS immediately after "8GB".
+        chip = lambda text: {re.sub(r'\s+', '', value).upper() for value in re.findall(
+            r'(?:RTX|GTX|RX)\s*\d{4}(?:\s*(?:TI|XTX|XT))?(?:\s*SUPER)?(?:\s*D\b)?', text, re.I)}
+        if len(chip(name)) != 1 or chip(name) != chip(title):
+            return False
+        if re.search(r'\d{4}[^，。]{0,12}[/|][^，。]{0,12}\d{4}', title):
+            return False
+        if flags(name) != flags(title):
+            return False
+        target_capacity = capacities(name) or capacities(specs)
+        if len(target_capacity) != 1 or capacities(title) != target_capacity:
+            return False
+        def edition(text):
+            if brand_key(brand) == 'asus':
+                text = re.sub(r'(?<![a-z0-9])o(?=\d+\s*g)', '', text, flags=re.I)
+            text = re.sub(r'geforce|\d+\s*g(?:b)?(?![a-z])', '', text, flags=re.I)
+            return model_key(text, brand)
+        return len(edition(name)) >= 6 and edition(name) in edition(title)
+    def component_identity(value):
+        if category in ('ram', 'ssd'):
+            # Capacity and RAM speed are validated below; retail titles often
+            # put these attributes in a different order or insert marketing text.
+            value = re.sub(r'\d+\s*g(?:b)?\s*[x×*]\s*\d+', '', value, flags=re.I)
+            value = re.sub(r'\d+(?:\.\d+)?\s*(?:gb|tb|g|t)(?![a-z])', '', value, flags=re.I)
+        if category == 'ram':
+            value = re.sub(r'ddr\s*[345]|(?<!\d)\d{4,5}\s*(?:mt/s|mhz)?', '', value, flags=re.I)
+        return model_key(value, brand)
+    target_key = component_identity(name)
+    source_key = component_identity(title)
     if len(target_key) < 3:
         return False
     if category == 'cpu':

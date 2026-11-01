@@ -1,4 +1,5 @@
 import json
+import asyncio
 import tempfile
 import unittest
 from pathlib import Path
@@ -6,11 +7,38 @@ import httpx
 from fastapi.testclient import TestClient
 from app.main import create_app
 from app.config import Settings
-from app.api.ai import AIService
+from app.api.ai import AIService, ReviewRequest
 
 
 BODY = dict(facts={f'{part}.name': part for part in ['cpu', 'board', 'ram', 'gpu', 'power', 'case', 'cooler', 'ssd']},
             rules=dict(errors=[dict(code='socket', message='接口冲突')], warnings=[], pending=[]))
+
+
+class AIQueueTests(unittest.IsolatedAsyncioTestCase):
+    async def test_overlapping_requests_queue_and_cancelled_request_releases_slot(self):
+        started = asyncio.Event()
+        release = asyncio.Event()
+        calls = []
+        async def handler(request):
+            calls.append(request)
+            if len(calls) == 1:
+                started.set()
+                await release.wait()
+            return httpx.Response(200, json={'choices': [{'message': {'content': '{"findings":[]}'}}]})
+        service = AIService(Settings(Path('unused.db'), ai_api_key='test', ai_model='test'), httpx.MockTransport(handler))
+        first = asyncio.create_task(service.review(ReviewRequest(**BODY)))
+        await asyncio.wait_for(started.wait(), 2)
+        second = asyncio.create_task(service.review(ReviewRequest(**BODY)))
+        await asyncio.sleep(0.01)
+        self.assertEqual(len(calls), 1)
+        self.assertFalse(second.done())
+        first.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await first
+        result = await asyncio.wait_for(second, 2)
+        self.assertEqual(result['provider'], 'doubao')
+        self.assertEqual(len(calls), 2)
+        self.assertFalse(service.lock.locked())
 
 
 class AITests(unittest.TestCase):
@@ -96,6 +124,21 @@ class AITests(unittest.TestCase):
     def test_status_never_returns_key(self):
         response = self.client.get('/api/ai/status')
         self.assertEqual(response.json(), {'configured': True})
+
+    def test_optimization_scoped_facts_and_evidence(self):
+        body = {**BODY, 'mode': 'budget_optimization'}
+        def handler(request):
+            payload = json.loads(request.content)
+            self.assertIn('before.*', payload['messages'][0]['content'])
+            self.assertIn('needs_quote', payload['messages'][0]['content'])
+            return self.output({'findings': [{'kind': 'suggestion', 'message': 'Review the complete tradeoff.',
+                                             'evidence': list(BODY['facts'])}]})
+        self.mock(handler)
+        self.assertEqual(self.client.post('/api/ai/optimization', json=body).status_code, 200)
+        self.assertEqual(self.client.post('/api/ai/optimization', json=BODY).status_code, 422)
+        self.mock(lambda request: self.output({'findings': [{'kind': 'suggestion', 'message': 'Invalid fact.',
+                                                           'evidence': ['after.gpu.inventedPrice']}]}))
+        self.assertEqual(self.client.post('/api/ai/optimization', json=body).status_code, 502)
 
     def test_chat_context_history_and_evidence(self):
         body = {**BODY, 'question': '显卡如何？', 'history': [{'role': 'user', 'content': '看看配置'}]}

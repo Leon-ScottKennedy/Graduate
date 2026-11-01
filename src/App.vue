@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import NavTop from './components/NavTop.vue'
 import AppFooter from './components/AppFooter.vue'
+import SiteAccessDialog from './components/SiteAccessDialog.vue'
 </script>
 
 <template>
   <div class="app">
     <NavTop />
+    <SiteAccessDialog />
     <main class="app_main">
       <router-view />
     </main>

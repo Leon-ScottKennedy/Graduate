@@ -186,6 +186,7 @@ export const demoParts: PartGroup[] = [
         id: 'cooler-a',
         brand: '九州风神 DeepCool',
         name: '九州风神 AK400',
+        compatibility: { coolerSockets: ['AM4', 'AM5', 'LGA115X', 'LGA1200', 'LGA1700'], coolerHeightMm: 155 },
         price: 200,
         specs: '塔式风冷 · 安装兼容性待核验',
         tag: '基础散热',
@@ -194,6 +195,7 @@ export const demoParts: PartGroup[] = [
         id: 'cooler-b',
         brand: '利民 Thermalright',
         name: '利民 Peerless Assassin 120 SE',
+        compatibility: { coolerSockets: ['AM4', 'AM5', 'LGA115X', 'LGA1200', 'LGA1700', 'LGA1851'], coolerHeightMm: 155 },
         coolingTier: 1,
         price: 250,
         specs: '双塔风冷 · 安装兼容性待核验',
@@ -203,4 +205,3 @@ export const demoParts: PartGroup[] = [
   },
 ]
 for (const group of demoParts) group.options.push(...(budgetOptions[group.id] ?? []))
-export const demoSnapshot = '2026-10-17 10:30'

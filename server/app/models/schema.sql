@@ -1,4 +1,15 @@
 -- Monetary values use integer CNY cents; missing prices remain NULL.
+CREATE TABLE IF NOT EXISTS public_reference_records (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL,
+    brand TEXT NOT NULL,
+    title TEXT NOT NULL,
+    price_cents INTEGER NOT NULL CHECK(price_cents > 0),
+    source_url TEXT NOT NULL,
+    checked_at TEXT NOT NULL,
+    source_date TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_public_reference_category ON public_reference_records(category,checked_at);
 CREATE TABLE IF NOT EXISTS quote_models (
     id TEXT PRIMARY KEY,
     category TEXT NOT NULL,
@@ -176,4 +187,32 @@ CREATE TABLE IF NOT EXISTS jd_pool_run_progress (
     task_id TEXT PRIMARY KEY REFERENCES ingestion_tasks(id),
     start_page INTEGER NOT NULL,
     last_page INTEGER NOT NULL DEFAULT 0
+);
+-- Only hashes of temporary user tokens are stored, never access codes or vendor keys.
+CREATE TABLE IF NOT EXISTS security_sessions (
+    token_hash TEXT PRIMARY KEY,
+    expires_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS security_usage (
+    bucket TEXT NOT NULL,
+    window INTEGER NOT NULL,
+    count INTEGER NOT NULL,
+    PRIMARY KEY (bucket, window)
+);
+CREATE INDEX IF NOT EXISTS idx_security_usage_window ON security_usage(window);
+CREATE INDEX IF NOT EXISTS idx_security_sessions_expiry ON security_sessions(expires_at);
+CREATE TABLE IF NOT EXISTS account_users (
+    id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS account_codes (
+    email TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0, sent_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS account_sessions (
+    token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES account_users(id) ON DELETE CASCADE,
+    expires_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS account_configs (
+    id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES account_users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL, snapshot TEXT NOT NULL, created_at INTEGER NOT NULL
 );

@@ -4,70 +4,30 @@
     <div class="nav_footer_inner">
       <div class="nav_footer_top">
         <div class="nav_footer_brand">
-          <svg
-            class="nav_footer_logo"
-            width="32"
-            height="32"
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M16 2L28 9V23L16 30L4 23V9L16 2Z"
-              fill="url(#navFooterHexGradient)"
-              stroke="#8B7CFF"
-              stroke-width="1.5"
-            />
-            <path
-              d="M11 16L15 20L21 12"
-              stroke="white"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <defs>
-              <linearGradient
-                id="navFooterHexGradient"
-                x1="4"
-                y1="2"
-                x2="28"
-                y2="30"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stop-color="#6c5ce7" />
-                <stop offset="1" stop-color="#a29bfe" />
-              </linearGradient>
-            </defs>
-          </svg>
+          <svg class="nav_footer_logo" width="30" height="30" viewBox="0 0 28 28" fill="currentColor" aria-hidden="true" shape-rendering="crispEdges"><path d="M4 4h8v4h4v4h4V4h4v20h-8v-4h-4v-4H8v8H4V4Z"/></svg>
           <div class="nav_footer_brand_text">
-            <strong class="nav_footer_brand_name">NexBuild</strong>
-            <span class="nav_footer_brand_sub">AI PC BUILDER</span>
+            <strong class="nav_footer_brand_name">NEXBUILD</strong>
+            <span class="nav_footer_brand_sub">你的装机工作台</span>
           </div>
         </div>
-        <nav class="nav_footer_links">
-          <div class="nav_footer_col">
-            <h4 class="nav_footer_col_title">产品</h4>
-            <router-link to="/smart-build" class="nav_footer_link">智能装机</router-link>
-            <router-link to="/ai-chat" class="nav_footer_link">AI 提问</router-link>
-            <router-link to="/config-plan" class="nav_footer_link">配置方案</router-link>
-            <router-link to="/hardware-compare" class="nav_footer_link">硬件对比</router-link>
-          </div>
-          <div class="nav_footer_col">
-            <h4 class="nav_footer_col_title">关于</h4>
-            <a href="#" class="nav_footer_link">关于我们</a>
-            <a href="#" class="nav_footer_link">使用帮助</a>
-            <a href="#" class="nav_footer_link">意见反馈</a>
-          </div>
-          <div class="nav_footer_col">
-            <h4 class="nav_footer_col_title">联系</h4>
-            <a href="#" class="nav_footer_link">GitHub</a>
-            <a href="#" class="nav_footer_link">邮箱</a>
-            <a href="#" class="nav_footer_link">QQ 群</a>
-          </div>
-        </nav>
+        <div class="nav_footer_contact">
+          <p>联系我们</p>
+          <a
+            class="nav_footer_github"
+            href="https://github.com/Leon-ScottKennedy/Graduate"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 .75a11.25 11.25 0 0 0-3.558 21.922c.562.104.768-.244.768-.542 0-.267-.01-.975-.015-1.914-3.13.68-3.79-1.508-3.79-1.508-.512-1.3-1.25-1.646-1.25-1.646-1.022-.699.077-.685.077-.685 1.13.08 1.725 1.16 1.725 1.16 1.005 1.722 2.636 1.225 3.278.937.103-.728.393-1.225.715-1.507-2.498-.284-5.124-1.25-5.124-5.565 0-1.23.44-2.232 1.16-3.02-.117-.284-.503-1.428.11-2.978 0 0 .945-.303 3.094 1.154a10.78 10.78 0 0 1 5.634 0c2.148-1.457 3.092-1.154 3.092-1.154.615 1.55.229 2.694.112 2.978.722.788 1.159 1.79 1.159 3.02 0 4.327-2.63 5.278-5.136 5.557.404.348.764 1.034.764 2.084 0 1.505-.014 2.72-.014 3.09 0 .3.203.65.774.54A11.252 11.252 0 0 0 12 .75Z" />
+            </svg>
+            <span>GitHub</span>
+            <span class="nav_footer_external" aria-hidden="true">↗</span>
+          </a>
+        </div>
       </div>
       <div class="nav_footer_bottom">
-        <p class="nav_footer_copy">© 2026 NexBuild. 基于 AI 的智能装机配置平台.</p>
+        <p class="nav_footer_copy">© 2026 NexBuild</p>
         <p class="nav_footer_tip">本站硬件数据仅供参考，实际价格以电商平台为准</p>
       </div>
     </div>
@@ -88,9 +48,11 @@
 }
 
 .nav_footer_top {
+  min-height: 105px;
   display: flex;
   justify-content: space-between;
   gap: 48px;
+  align-items: center;
 }
 
 .nav_footer_brand {
@@ -101,6 +63,7 @@
 
 .nav_footer_logo {
   flex-shrink: 0;
+  color: light-dark(#202733, #ededed);
 }
 
 .nav_footer_brand_text {
@@ -109,46 +72,52 @@
 }
 
 .nav_footer_brand_name {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: 2px;
   color: var(--text-primary);
 }
 
 .nav_footer_brand_sub {
-  font-size: 12px;
-  letter-spacing: 2px;
+  font-size: 10px;
+  letter-spacing: 1px;
   color: var(--text-label);
 }
-
-/* 链接列 */
-.nav_footer_links {
-  display: flex;
-  gap: 64px;
-}
-
-.nav_footer_col {
-  display: flex;
-  flex-direction: column;
-}
-
-.nav_footer_col_title {
-  margin-bottom: 14px;
-  font-size: 14px;
-  font-weight: 700;
+.nav_footer_github:hover {
   color: var(--text-primary);
+  border-color: var(--text-label);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+.nav_footer_github:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
 }
 
-.nav_footer_link {
-  padding: 5px 0;
-  font-size: 13px;
+.nav_footer_contact {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.nav_footer_contact > p {
+  font-size: 12px;
   color: var(--text-label);
+  margin-bottom: 12px;
+}
+.nav_footer_github {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-divider);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color .18s ease, border-color .18s ease, background-color .18s ease;
 }
-
-.nav_footer_link:hover {
-  color: var(--color-primary-light);
-}
+.nav_footer_external { margin-left: 16px; font-size: 14px; color: var(--text-label); }
 
 /* 底部分隔 + 版权 */
 .nav_footer_bottom {
@@ -158,11 +127,17 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .nav_footer_copy,
 .nav_footer_tip {
   font-size: 12px;
   color: var(--text-hint);
+}
+@media (max-width: 640px) {
+  .nav_footer_top { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .nav_footer_bottom { align-items: flex-start; flex-direction: column; }
 }
 </style>

@@ -77,6 +77,7 @@ def parse_response(text: str, method: str = METHOD) -> JDPage:
 class JDClient:
     def __init__(self, settings: Settings):
         self.settings = settings
+        self.before_request = None
 
     @property
     def configured(self):
@@ -116,7 +117,9 @@ class JDClient:
         parameters['sign'] = sign_parameters(parameters, self.settings.jd_app_secret)
         try:
             # Form POST keeps credentials and signatures out of URLs/access logs.
-            with httpx.Client(timeout=20, follow_redirects=False) as client:
+            if self.before_request:
+                self.before_request()
+            with httpx.Client(timeout=20, follow_redirects=False, trust_env=False) as client:
                 response = client.post(GATEWAY, data=parameters)
                 response.raise_for_status()
                 if len(response.content) > 5_000_000:

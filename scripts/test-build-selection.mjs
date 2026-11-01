@@ -17,7 +17,7 @@ const { selectBuild } = loadTypeScript('../src/services/buildSelection.ts')
 const before = JSON.stringify(demoParts)
 const budgets = [3000, 3500, 5000, 7000, 9000, 11000, 14200, 18000, 22000, 26000, 28600, 30000]
 const usages = ['游戏电竞', '内容创作', '办公学习', 'AI 计算']
-const preferences = ['均衡搭配', '控制预算', '静音优先']
+const preferences = ['均衡搭配', '性价比优先', '性能优先']
 let checks = 0
 for (const budget of budgets) {
   for (const usage of usages) {
@@ -49,8 +49,26 @@ assert.ok(high.total >= 27000 && high.total <= 28600)
 const gaming = selectBuild(demoParts, 14200, '游戏电竞', '均衡搭配')
 const office = selectBuild(demoParts, 14200, '办公学习', '均衡搭配')
 assert.notDeepEqual(gaming.chosen, office.chosen)
-const saving = selectBuild(demoParts, 14200, '游戏电竞', '控制预算')
+const saving = selectBuild(demoParts, 14200, '游戏电竞', '性价比优先')
 assert.ok(saving.total < gaming.total)
+// At equal price and within the same GPU tier, prefer the newer generation.
+const baseGpu = demoParts.find(group => group.id === 'gpu').options.find(item => item.id === 'gpu-b')
+const newGpu = { ...baseGpu, id: 'new-generation-test', name: 'MSI RTX 5070 12GB', specs: '12GB' }
+const generationGroups = demoParts.map(group => group.id === 'gpu' ? { ...group, options: [baseGpu, newGpu] } : group)
+assert.equal(selectBuild(generationGroups, 14200, '游戏电竞', '均衡搭配').chosen.gpu.id, newGpu.id)
+const unpricedGroups = demoParts.map(group => group.id === 'gpu' ? { ...group, options: [baseGpu, { ...newGpu, price: 0, requiresQuote: true }] } : group)
+assert.equal(selectBuild(unpricedGroups, 14200, '游戏电竞', '均衡搭配').chosen.gpu.id, baseGpu.id)
+const quotedGpu = { ...newGpu, marketOffer: { id: 'offer-test', shop: '测试自营', platform: 'jd', productUrl: 'https://item.jd.com/123.html', collectedAt: new Date().toISOString() } }
+const shoppingGroups = demoParts.map(group => group.id === 'gpu' ? { ...group, options: [...group.options, quotedGpu] } : group)
+const shopping = selectBuild(shoppingGroups, 15700, '游戏电竞', '均衡搭配')
+assert.ok(shopping.total <= 15700)
+assert.ok(shopping.total >= 15700 * 0.9, 'Sparse quotes must not cap a higher-budget configuration')
+for (const budget of [9000, 12000, 18000, 18900, 25000]) {
+  const result = selectBuild(shoppingGroups, budget, '游戏电竞', '均衡搭配')
+  assert.ok(result.total <= budget && result.total >= budget * 0.9, `Budget utilization regression: ${budget}`)
+  if (budget >= 18000) assert.ok(result.chosen.gpu.price > quotedGpu.price, 'High budgets need an appropriate GPU tier')
+}
+assert.ok(selectBuild(shoppingGroups, 3000, '游戏电竞', '均衡搭配'), 'Low budgets retain a reference fallback')
 assert.equal(selectBuild(demoParts, 1000, '游戏电竞', '均衡搭配'), null)
 assert.equal(
   JSON.stringify(demoParts),

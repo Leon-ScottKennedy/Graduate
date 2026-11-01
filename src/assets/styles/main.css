@@ -12,33 +12,35 @@
 
 html {
   scroll-behavior: smooth;
+  /* Keep the viewport width unchanged when a modal locks body scrolling. */
+  scrollbar-gutter: stable;
 }
 
-/* Match document and nested scrolling surfaces to the dark theme. */
+/* Keep document scrollbars native; customize only nested scrolling surfaces. */
 :root {
   color-scheme: dark;
 }
-* {
+:where(body *) {
   scrollbar-width: thin;
   scrollbar-color: #756184 #1b1822;
 }
-*::-webkit-scrollbar {
+:where(body *)::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-*::-webkit-scrollbar-track {
+:where(body *)::-webkit-scrollbar-track {
   background: #1b1822;
   border-radius: 8px;
 }
-*::-webkit-scrollbar-thumb {
+:where(body *)::-webkit-scrollbar-thumb {
   background: #756184;
   border: 2px solid #1b1822;
   border-radius: 8px;
 }
-*::-webkit-scrollbar-thumb:hover {
+:where(body *)::-webkit-scrollbar-thumb:hover {
   background: #a086b5;
 }
-*::-webkit-scrollbar-corner {
+:where(body *)::-webkit-scrollbar-corner {
   background: #1b1822;
 }
 @media (forced-colors: active) {

@@ -102,8 +102,8 @@ const cubes = [
             {{ row.b }}
           </span>
         </div>
-        <router-link to="/ai-chat" class="hardware_compare_more">
-          不确定怎么选？问问 AI →
+        <router-link to="/smart-build" class="hardware_compare_more">
+          不确定怎么选？去智能装机 →
         </router-link>
       </div>
     </div>

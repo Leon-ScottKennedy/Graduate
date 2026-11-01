@@ -1,6 +1,7 @@
 """Local, deduplicated market evidence from both official integrations."""
 import re
 import json
+from ..cleaning.merchant_identity import merchant_identity
 from urllib.parse import urlencode
 from datetime import datetime, timezone, timedelta
 from ..cleaning.model_match import brand_key, fold, matches
@@ -37,15 +38,10 @@ def gpu_families(text):
 def merchant_profile(platform, shop, raw):
     """Rank merchant hints without claiming that a shop name verifies brand ownership."""
     if platform == 'jd':
-        return (0, '京东自营') if raw.get('owner') == 'g' else (2, '京东')
+        return (0, '京东自营') if raw.get('owner') == 'g' else (3, '京东')
     basic = raw.get('item_basic_info') or {}
     tmall = str(basic.get('user_type')) == '1'
-    flagship_hint = bool(re.search(r'官方旗舰店|旗舰店|官方店|专卖店', shop))
-    if tmall and flagship_hint:
-        return 0, '天猫'
-    if flagship_hint:
-        return 1, '淘宝'
-    return (2, '天猫') if tmall else (3, '淘宝')
+    return (2, '天猫') if tmall else (4, '淘宝')
 
 
 def market_keyword(category, brand, name, specs):
@@ -66,23 +62,30 @@ def market_keyword(category, brand, name, specs):
 class MarketComparisonService:
     def __init__(self, database):
         self.database = database
+        self._rows = None
 
     def compare(self, category, brand, name, specs, page=1, platform='all'):
         # Read the latest snapshot even when its price is invalid. Never resurrect an old price.
-        with self.database.connect() as db:
-            rows = db.execute('''SELECT p.*, d.title, d.brand, s.price_cents,s.collected_at,r.payload_json
+        if self._rows is None:
+            with self.database.connect() as db:
+                self._rows = db.execute('''SELECT p.*, d.title, d.brand, s.price_cents,s.collected_at,r.payload_json
                 FROM products p JOIN product_details d ON d.product_id=p.id
                 JOIN raw_records r ON r.id=d.raw_record_id
                 JOIN price_snapshots s ON s.id=(SELECT id FROM price_snapshots
                     WHERE product_id=p.id AND price_type='listed'
                     ORDER BY collected_at DESC,id DESC LIMIT 1)
                 ORDER BY s.collected_at DESC,p.id''').fetchall()
+            self._by_brand = {}
+            for row in self._rows:
+                self._by_brand.setdefault(brand_key(row['brand']), []).append(row)
+        rows = self._by_brand.get(brand_key(brand), [])
         tokens = re.findall(r'[a-z0-9]+', name.casefold())
         models = [token for token in tokens if len(token) >= 3 and any(c.isdigit() for c in token)]
         models = [token for token in models if not re.fullmatch(r'\d+(?:gb|tb|w)', token)]
         families = gpu_families(name + ' ' + specs) if category == 'gpu' else set()
         cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
         items = []
+        diagnostics = dict(modelMatches=0, unverifiedMerchantMatches=0, incompleteOffers=0)
         seen = set()
         for row in rows:
             if platform != 'all' and row['platform'] != platform:
@@ -111,22 +114,34 @@ class MarketComparisonService:
                 continue
             if re.search(r'水冷头|扣具|支架|转接|适用|兼容|预售|定金', title):
                 exact = False
-            if not exact and not related and (families or fold(name) not in fold(title)):
+            identity_evidence = merchant_identity(row['platform'], row['shop'], raw)
+            # Permit Tmall/JD third parties; keep model/condition checks independent.
+            # Raw evidence stays stored for later review, never padded with chip references.
+            if not exact:
+                continue
+            diagnostics['modelMatches'] += 1
+            if not identity_evidence['merchantEligible']:
+                diagnostics['unverifiedMerchantMatches'] += 1
+                continue
+            if row['price_cents'] is None or row['price_cents'] <= 0 or not row['product_url']:
+                diagnostics['incompleteOffers'] += 1
                 continue
             stale = row['collected_at'] < cutoff
             merchant_rank, platform_label = merchant_profile(row['platform'], row['shop'], raw)
             items.append(dict(id=row['id'], platform=row['platform'], title=title, shop=row['shop'],
+                              **identity_evidence,
                               platformLabel=platform_label, merchantRank=merchant_rank,
                               productUrl=safe_url(row['product_url']) if row['platform'] == 'taobao' else row['product_url'],
                               price=row['price_cents'] / 100 if row['price_cents'] is not None else None,
                               collectedAt=row['collected_at'], stale=stale,
                               matchStatus='title_match' if exact else 'reference',
                               relationLabel='同芯片参考 · 品牌及具体规格待确认' if families and related else '相关商品 · 型号规格待确认'))
-        items.sort(key=lambda item: (item['price'] is None, item['stale'], item['merchantRank'], item['matchStatus'] != 'title_match',
+        items.sort(key=lambda item: (not (item['isJdSelfOperated'] or item['officialBrandStoreVerified']),
+                                     item['merchantRank'], item['stale'], item['price'] is None, item['matchStatus'] != 'title_match',
                                      item['price'] or 0, item['id']))
         counts = {key: sum(item['platform'] == key for item in items) for key in ('jd', 'taobao')}
         keyword = market_keyword(category, brand, name, specs)
-        return dict(total=len(items), counts=counts, page=page, pageSize=30, searchKeyword=keyword,
+        return dict(total=len(items), counts=counts, diagnostics=diagnostics, page=page, pageSize=30, searchKeyword=keyword,
                     storeSearches=[dict(platform='jd', label='去京东找店铺', url='https://search.jd.com/Search?' + urlencode(dict(keyword=keyword, enc='utf-8'))),
                                    dict(platform='taobao', label='去天猫找店铺', url='https://list.tmall.com/search_product.htm?' + urlencode(dict(q=keyword)))],
                     products=items[(page-1)*30:page*30])

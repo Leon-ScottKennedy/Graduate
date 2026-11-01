@@ -15,7 +15,10 @@ import deepcoolSvg from '../../assets/brands/deepcool.svg?raw'
 import acerSvg from '../../assets/brands/acer.svg?raw'
 import dellSvg from '../../assets/brands/dell.svg?raw'
 
-export async function createCubeBrandTextures(): Promise<HTMLCanvasElement[]> {
+export async function createCubeBrandTextures(theme: 'dark' | 'light' = 'dark'): Promise<HTMLCanvasElement[]> {
+  const lightLogoColors: Record<string, string> = {
+    NVIDIA: '#4a7800', Seagate: '#388333', Razer: '#228542', Acer: '#50751a',
+  }
   const brands = [
     { name: 'NVIDIA', svg: nvidiaSvg, color: '#76b900', viewBox: '0 3 24 18' },
     { name: 'ASUS', svg: asusSvg, color: '#00539b', viewBox: '0 8.5 24 7' },
@@ -37,7 +40,7 @@ export async function createCubeBrandTextures(): Promise<HTMLCanvasElement[]> {
   return Promise.all(brands.map(async brand => {
     const document = new DOMParser().parseFromString(brand.svg, 'image/svg+xml')
     const svg = document.documentElement
-    svg.setAttribute('fill', brand.color)
+    svg.setAttribute('fill', theme === 'light' ? lightLogoColors[brand.name] ?? brand.color : brand.color)
     if (brand.viewBox) svg.setAttribute('viewBox', brand.viewBox)
     const [, , width = 24, height = 24] = (svg.getAttribute('viewBox') ?? '0 0 24 24').split(/\s+/).map(Number)
     svg.setAttribute('width', String(width))
@@ -49,7 +52,14 @@ export async function createCubeBrandTextures(): Promise<HTMLCanvasElement[]> {
     texture.dataset.brand = brand.name
     texture.width = texture.height = 128
     const context = texture.getContext('2d')!
-    // Keep the logo background transparent so the shaded cube face stays uniform.
+    // A separate light sticker keeps the logo legible over every shaded face.
+    if (theme === 'light') {
+      context.fillStyle = '#fdfefe'
+      context.fillRect(0, 0, 128, 128)
+      context.strokeStyle = '#b5c0cb'
+      context.lineWidth = 2
+      context.strokeRect(1, 1, 126, 126)
+    }
     const scale = Math.min(108 / width, 90 / height)
     const logoWidth = width * scale
     const logoHeight = height * scale

@@ -11,10 +11,18 @@ loader.extensions['.ts'] = (module, filename) => {
     filename,
   )
 }
-const { selectSpecificationCandidates: selectCandidates, selectCandidates: selectPriceCandidates } = loader('../src/services/candidateSelection.ts')
+const { selectSpecificationCandidates: selectCandidates, selectCandidates: selectPriceCandidates, selectComparisonCandidates } = loader('../src/services/candidateSelection.ts')
 const { demoParts } = loader('../src/data/mock/catalog.ts')
 const { selectBuild } = loader('../src/services/buildSelection.ts')
+const { hardwareGeneration } = loader('../src/services/hardwareGeneration.ts')
 const { candidateOptions } = loader('../src/data/mock/candidateOptions.ts')
+const { sameGpuModel } = loader('../src/services/candidateSelection.ts')
+const { candidatePriceCeiling } = loader('../src/services/candidateSelection.ts')
+assert.equal(candidatePriceCeiling(599, .15), 689, 'A 599-yuan base admits the 689-yuan rounded boundary')
+const graphics = name => ({ id: name, name, specs: '16GB', price: 5000, brand: 'Test' })
+assert.ok(!sameGpuModel(graphics('RX 9070'), graphics('RX 9070 XT')))
+assert.ok(!sameGpuModel(graphics('RX 7900 XT'), graphics('RX 7900 XTX')))
+assert.ok(sameGpuModel(graphics('ARC 770'), graphics('ARC 770')))
 const catalogBefore = JSON.stringify(demoParts)
 let covered = 0
 for (const category of demoParts) {
@@ -93,8 +101,51 @@ assert.ok(!selectCandidates(ram, ram.options[0]).some((item) => item.name.includ
 assert.ok(
   Object.values(candidateOptions)
     .flat()
-    .every((item) => item.tag === '预设参考价'),
+    .every((item) => item.requiresQuote ? item.price === 0 && !!item.specSource : item.tag === '预设参考价'),
 )
+const screenshotGpu = gpu.options.find(part => /4070 Ti SUPER/.test(part.name))
+const offlineAlternatives = selectComparisonCandidates(gpu, screenshotGpu, new Set(), { priceRange: 0.1 })
+assert.ok(offlineAlternatives.some(part => part.brand.includes('华硕') && part.price > 0))
+assert.ok(offlineAlternatives.some(part => part.brand.includes('七彩虹') && !part.requiresQuote && part.referencePrice))
+assert.ok(offlineAlternatives.some(part => part.brand.includes('技嘉') && !part.requiresQuote && part.referencePrice))
+assert.ok(offlineAlternatives.every(part => part.id !== screenshotGpu.id && /4070 Ti SUPER/.test(part.name)))
+assert.ok(!offlineAlternatives.some(part => /RTX 4070 SUPER|RTX 4070 ·/.test(part.specs)))
+assert.ok(offlineAlternatives.filter(part => part.price > 0).every(part => part.price / screenshotGpu.price - 1 <= 0.100000001))
+assert.deepEqual(selectComparisonCandidates(gpu, screenshotGpu, new Set(), { priceRange: 0.1, brand: '七彩虹 Colorful' }).map(part => part.id), ['candidate-gpu-colorful-4070tis'])
+const gpu5060 = { ...current, id: 'screenshot-5060ti', brand: '影驰 GALAX', name: '影驰 GeForce RTX 5060 Ti 圣刃 OC 8GB', specs: 'RTX 5060 Ti · 8GB GDDR7', price: 3999 }
+const alternatives5060 = selectComparisonCandidates(gpu, gpu5060, new Set(), { priceRange: 0.15 })
+assert.ok(alternatives5060.length >= 5)
+const all5060 = selectComparisonCandidates(gpu, gpu5060, new Set())
+for (const brand of ['华硕','微星','技嘉','七彩虹']) assert.ok(all5060.some(part => part.brand.includes(brand) && part.price > 0 && !part.requiresQuote), brand)
+assert.ok(alternatives5060.some(part => part.id === 'cross-msi-5060ti-ventus-8' && part.price === 3199), 'A cheaper same-chip model remains visible without changing its price')
+for (const series of ['Dual','PRIME','TUF Gaming']) assert.ok(alternatives5060.some(part => part.name.includes(series)), series)
+assert.ok(alternatives5060.every(part => /5060 Ti/.test(part.name) && /8GB/.test(part.specs)))
+for (const id of ['board','ram','ssd']) {
+  const category = demoParts.find(group => group.id === id)
+  const selected = category.options.find(part => ['board-a','ram-a','ssd-a'].includes(part.id))
+  const candidates = selectComparisonCandidates(category, selected, new Set(), { priceRange: 0.15 })
+  const allModels = selectComparisonCandidates(category, selected, new Set())
+  assert.ok(allModels.length >= 3 && allModels.every(part => part.price > 0 && !part.requiresQuote), `${id} priced cross-brand alternatives`)
+  assert.ok(candidates.length > 0)
+  assert.ok(allModels.some(part => part.brand !== selected.brand), `${id} needs another brand`)
+  assert.ok(candidates.filter(part => !part.requiresQuote && part.price > 0).every(part => part.price <= Math.round(selected.price * 1.15)))
+}
+// Apply the saving policy to every category, with the positive boundary intact.
+for (const category of demoParts) {
+  const selected = category.options[0]
+  const variant = (id, price) => ({ ...selected, id, name: `${selected.name} ${id}`, price })
+  const cheap = variant('discount-fixture', selected.price * 0.4)
+  const edge = variant('premium-edge-fixture', Math.round(selected.price * 1.15))
+  const over = variant('premium-over-fixture', Math.round(selected.price * 1.15) + .01)
+  const fixture = { ...category, options: [...category.options, cheap, edge, over] }
+  const result = selectComparisonCandidates(fixture, selected, new Set(), { priceRange: 0.15 })
+  assert.ok(result.some(part => part.id === cheap.id), `${category.id}: 60% saving must remain visible`)
+  assert.ok(result.some(part => part.id === edge.id), `${category.id}: exact +15% remains visible`)
+  assert.ok(!result.some(part => part.id === over.id), `${category.id}: above +15% remains excluded`)
+  assert.ok(!result.some(part => part.id === selected.id))
+}
+const wrongCheapGpu = { ...gpu5060, id: 'wrong-cheap-gpu', name: 'RTX 5060 8GB', price: 100 }
+assert.ok(!selectComparisonCandidates({ ...gpu, options: [...gpu.options, wrongCheapGpu] }, gpu5060, new Set(), { priceRange: 0.15 }).some(part => part.id === wrongCheapGpu.id), 'A cheaper different chip does not become a same-chip alternative')
 console.log(
   `Candidate regression checks passed: ${covered} base models; 192 budget/usage/category combinations`,
 )
@@ -109,13 +160,17 @@ for (const category of demoParts) {
     assert.ok(nearby.every((item) => item.price > 0 && !item.requiresQuote && Math.abs(item.price / selected.price - 1) <= 0.350000001))
     const priced = all.filter((item) => item.price > 0 && !item.requiresQuote)
     for (let index = 1; index < priced.length; index++) {
-      assert.ok(Math.abs(priced[index].price-selected.price) >= Math.abs(priced[index-1].price-selected.price))
+      const previousGeneration = hardwareGeneration(category.id, priced[index-1])
+      const nextGeneration = hardwareGeneration(category.id, priced[index])
+      assert.ok(previousGeneration >= nextGeneration)
+      if (previousGeneration === nextGeneration)
+        assert.ok(Math.abs(priced[index].price-selected.price) >= Math.abs(priced[index-1].price-selected.price))
     }
   }
 }
 const widerGpu = selectPriceCandidates(gpu, gpu.options.find((item) => item.id === 'gpu-d'), { priceRange: 0.35 })
 assert.ok(widerGpu.some((item) => item.name.includes('4070 Ti SUPER')))
-assert.ok(selectPriceCandidates(gpu, current).some((item) => item.requiresQuote && item.name.includes('5070')))
+assert.ok(selectPriceCandidates(gpu, current).some((item) => !item.requiresQuote && item.price > 0 && item.referencePrice && item.name.includes('5070')))
 const nearCpu = selectPriceCandidates(cpu, cpu.options[1], { priceRange: 0.5 })
 assert.ok(nearCpu.some((item) => item.name.includes('7600')))
 assert.ok(nearCpu.some((item) => item.name.includes('7800X3D')))

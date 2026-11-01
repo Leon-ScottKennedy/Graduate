@@ -11,7 +11,7 @@ export interface CompatibilityResult {
 }
 type Build = Record<string, PartOption>
 const specs = (part?: PartOption) => `${part?.name ?? ''} ${part?.specs ?? ''}`.toUpperCase()
-const socket = (part?: PartOption) =>
+export const hardwareSocket = (part?: PartOption) =>
   part?.compatibility?.socket ??
   specs(part)
     .match(/\b(AM[45]|LGA\s*\d{4})\b/)?.[1]
@@ -31,8 +31,8 @@ export function checkBuildCompatibility(build: Build): CompatibilityResult {
     pending('incomplete', '配置不完整，暂无法检查全部配件')
     return result
   }
-  const cpuSocket = socket(cpu)
-  const boardSocket = socket(board)
+  const cpuSocket = hardwareSocket(cpu)
+  const boardSocket = hardwareSocket(board)
   if (cpuSocket && boardSocket && cpuSocket !== boardSocket)
     error('socket', `CPU ${cpuSocket} 与主板 ${boardSocket} 接口不匹配`)
   else if (!cpuSocket || !boardSocket) pending('socket', 'CPU/主板接口资料待补齐')
